@@ -4,7 +4,7 @@ import time
 import os
 
 BASE_URL = "http://localhost:5001/api"
-SEED_FILE = "plans/seed_document.md"
+SEED_FILE = "plans/refined_mega_seed.md"
 
 def run_scenario(scenario_name, marketing_strategy):
     print(f"\n{'='*50}")
@@ -54,7 +54,7 @@ def run_scenario(scenario_name, marketing_strategy):
     print("\n[Step 2] Building GraphRAG Memory...")
     data = {
         'project_id': project_id,
-        'chunk_size': 400
+        'chunk_size': 2000
     }
     response = requests.post(f"{BASE_URL}/graph/build", json=data)
     if response.status_code != 200:
@@ -67,7 +67,7 @@ def run_scenario(scenario_name, marketing_strategy):
     # 3. Wait for build
     print("\n[Step 3] Waiting for Graph Build...")
     graph_id = None
-    for _ in range(40):
+    for _ in range(120):
         response = requests.get(f"{BASE_URL}/graph/task/{task_id}")
         task_data = response.json()['data']
         status = task_data['status']
@@ -109,7 +109,7 @@ def run_scenario(scenario_name, marketing_strategy):
         return None
     
     print("Waiting for preparation...")
-    for _ in range(40):
+    for _ in range(120):
         response = requests.post(f"{BASE_URL}/simulation/prepare/status", json=data)
         status_data = response.json()['data']
         status = status_data['status']
