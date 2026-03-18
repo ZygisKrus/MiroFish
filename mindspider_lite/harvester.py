@@ -7,10 +7,13 @@ from typing import List, Dict, Any
 
 class MindSpiderLite:
     def __init__(self):
-        self.api_key = "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"
+        from dotenv import load_dotenv
+        load_dotenv("/home/zygis/MiroFish/.env")
+        self.api_key = os.environ.get("LLM_API_KEY")
         self.base_url = "https://openrouter.ai/api/v1"
-        self.model = "deepseek/deepseek-chat"
-        self.headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"}
+        self.model = "anthropic/claude-3.5-sonnet" # Use the smarter model for generating the seed
+        self.headers = {"User-Agent": "Mozilla/5.0"}
+
 
     def scrape_reddit_context(self, subreddit, queries):
         all_text = []

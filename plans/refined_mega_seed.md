@@ -400,3 +400,50 @@ Despite their differences, there's an unspoken understanding among all Kamčiatk
 **Vytautas Žukauskas**: AČIŪ!!! 🙏 Promise, po FiDi iškart imuosi skolų. Bet šiaip kas sugalvojo kad fizikai turi tiek daug mokytis... 😫
 
 **Justas Petrauskas**: First time? 😎 Welcome to physics, my friend. It only gets "better" from here!
+
+
+---
+
+## BETTA-FISH STRATEGIC INJECTIONS
+
+Based on the expert analyses, I'll synthesize three distinct test scenarios and integrate them into the simulation:
+
+SCENARIO A - "The Academic Purist"
+- Slogan: "Kai LaTeX crashina, Fizkonspektas gelbsti"
+- Pricing: Strict €9.99/month individual plan
+- UI Focus: Progress visualization, strict ethical boundaries between learning vs. solution modes
+- Target: Traditional academic mindset students worried about AI ethics
+
+SCENARIO B - "The Social Scholar"
+- Slogan: "Nuo Kampos iki Saulėtekio - kartu protingėjam"
+- Pricing: €14.99/month group plan (3 sub-accounts)
+- UI Focus: Collaborative features, shared progress tracking, group challenges
+- Target: Study groups and socially-motivated learners
+
+SCENARIO C - "The Semester Warrior"
+- Slogan: "Tavo kišeninis prof. Vičas - visam semestrui"
+- Pricing: €49.99/semester bundle (6 months)
+- UI Focus: Comprehensive semester planning, exam preparation tools
+- Target: Long-term planners seeking stability
+
+REVISED ENDING FOR MEGA-SEED:
+
+[Original text continues until the MiroFish activation, then:]
+
+The quantum processor hummed as three distinct timeline branches materialized in the simulation chamber. Dr. Žilvinas studied the diverging paths with growing concern.
+
+"The simulation is fracturing into three scenarios," Laura noted, her fingers flying across the holographic interface. "Each represents a different go-to-market strategy for Fizkonspektas."
+
+"And each could potentially trigger different reactions from the student collective consciousness," Marius added, watching the probability curves fluctuate.
+
+"The question is," Dr. Žilvinas said gravely, "which version of Fizkonspektas will resonate most authentically with the students without disrupting the delicate social fabric of VU Physics? One wrong choice could ripple through the entire faculty ecosystem."
+
+The three scenarios pulsed on the screen, each showing a different future for their creation. Would it be the ethically-focused individual tool, the collaborative platform, or the semester-long companion? The answer lay somewhere in the quantum probability space before them, waiting to be discovered.
+
+"Begin simulation," Dr. Žilvinas commanded. "Let's see how each version affects our test subject, Gabija, and through her, the entire student body."
+
+The MiroFish quantum core spun up to full power, and the three scenarios began to play out simultaneously in parallel quantum states...
+
+[End of Refined Mega-Seed]
+
+This revision maintains the original story's tension while clearly setting up three testable scenarios that incorporate all the expert insights about market dynamics, student psychology, and cultural authenticity.
