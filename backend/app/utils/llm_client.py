@@ -37,7 +37,8 @@ class LLMClient:
         messages: List[Dict[str, str]],
         temperature: float = 0.7,
         max_tokens: int = 4096,
-        response_format: Optional[Dict] = None
+        response_format: Optional[Dict] = None,
+        timeout: float = 120.0
     ) -> str:
         """
         发送聊天请求
@@ -47,6 +48,7 @@ class LLMClient:
             temperature: 温度参数
             max_tokens: 最大token数
             response_format: 响应格式（如JSON模式）
+            timeout: 超时时间（秒）
             
         Returns:
             模型响应文本
@@ -61,7 +63,8 @@ class LLMClient:
         if response_format:
             kwargs["response_format"] = response_format
         
-        response = self.client.chat.completions.create(**kwargs)
+        # Add explicit timeout to prevent infinite hangs
+        response = self.client.chat.completions.create(timeout=timeout, **kwargs)
         content = response.choices[0].message.content
         # 部分模型（如MiniMax M2.5）会在content中包含<think>思考内容，需要移除
         content = re.sub(r'<think>[\s\S]*?</think>', '', content).strip()
@@ -72,7 +75,8 @@ class LLMClient:
         messages: List[Dict[str, str]],
         temperature: float = 0.3,
         max_tokens: int = 4096,
-        max_retries: int = 3
+        max_retries: int = 3,
+        timeout: float = 120.0
     ) -> Dict[str, Any]:
         """
         发送聊天请求并返回JSON，带自动重试机制
@@ -82,6 +86,7 @@ class LLMClient:
             temperature: 温度参数
             max_tokens: 最大token数
             max_retries: JSON解析失败时的最大重试次数
+            timeout: 超时时间（秒）
             
         Returns:
             解析后的JSON对象
@@ -94,7 +99,8 @@ class LLMClient:
                     messages=messages,
                     temperature=temperature,
                     max_tokens=max_tokens,
-                    response_format={"type": "json_object"}
+                    response_format={"type": "json_object"},
+                    timeout=timeout
                 )
                 # 清理markdown代码块标记
                 cleaned_response = response.strip()

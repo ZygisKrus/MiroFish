@@ -446,7 +446,8 @@ class SimulationConfigGenerator:
                         {"role": "user", "content": prompt}
                     ],
                     response_format={"type": "json_object"},
-                    temperature=0.7 - (attempt * 0.1)  # 每次重试降低温度
+                    temperature=0.7 - (attempt * 0.1),  # 每次重试降低温度
+                    timeout=60.0
                     # 不设置max_tokens，让LLM自由发挥
                 )
                 
@@ -812,73 +813,15 @@ class SimulationConfigGenerator:
         start_idx: int,
         simulation_requirement: str
     ) -> List[AgentActivityConfig]:
-        """分批生成Agent配置"""
+        """分批生成Agent配置 (Forced Rule-Based to save LLM costs)"""
         
-        # 构建实体信息（使用配置的摘要长度）
-        entity_list = []
-        summary_len = self.AGENT_SUMMARY_LENGTH
-        for i, e in enumerate(entities):
-            entity_list.append({
-                "agent_id": start_idx + i,
-                "entity_name": e.name,
-                "entity_type": e.get_entity_type() or "Unknown",
-                "summary": e.summary[:summary_len] if e.summary else ""
-            })
-        
-        prompt = f"""基于以下信息，为每个实体生成社交媒体活动配置。
-
-模拟需求: {simulation_requirement}
-
-## 实体列表
-```json
-{json.dumps(entity_list, ensure_ascii=False, indent=2)}
-```
-
-## 任务
-为每个实体生成活动配置，注意：
-- **时间符合中国人作息**：凌晨0-5点几乎不活动，晚间19-22点最活跃
-- **官方机构**（University/GovernmentAgency）：活跃度低(0.1-0.3)，工作时间(9-17)活动，响应慢(60-240分钟)，影响力高(2.5-3.0)
-- **媒体**（MediaOutlet）：活跃度中(0.4-0.6)，全天活动(8-23)，响应快(5-30分钟)，影响力高(2.0-2.5)
-- **个人**（Student/Person/Alumni）：活跃度高(0.6-0.9)，主要晚间活动(18-23)，响应快(1-15分钟)，影响力低(0.8-1.2)
-- **公众人物/专家**：活跃度中(0.4-0.6)，影响力中高(1.5-2.0)
-
-返回JSON格式（不要markdown）：
-{{
-    "agent_configs": [
-        {{
-            "agent_id": <必须与输入一致>,
-            "activity_level": <0.0-1.0>,
-            "posts_per_hour": <发帖频率>,
-            "comments_per_hour": <评论频率>,
-            "active_hours": [<活跃小时列表，考虑中国人作息>],
-            "response_delay_min": <最小响应延迟分钟>,
-            "response_delay_max": <最大响应延迟分钟>,
-            "sentiment_bias": <-1.0到1.0>,
-            "stance": "<supportive/opposing/neutral/observer>",
-            "influence_weight": <影响力权重>
-        }},
-        ...
-    ]
-}}"""
-
-        system_prompt = "你是社交媒体行为分析专家。返回纯JSON，配置需符合中国人作息习惯。"
-        
-        try:
-            result = self._call_llm_with_retry(prompt, system_prompt)
-            llm_configs = {cfg["agent_id"]: cfg for cfg in result.get("agent_configs", [])}
-        except Exception as e:
-            logger.warning(f"Agent配置批次LLM生成失败: {e}, 使用规则生成")
-            llm_configs = {}
-        
-        # 构建AgentActivityConfig对象
+        # 构建AgentActivityConfig对象 (完全使用规则生成)
         configs = []
         for i, entity in enumerate(entities):
             agent_id = start_idx + i
-            cfg = llm_configs.get(agent_id, {})
             
-            # 如果LLM没有生成，使用规则生成
-            if not cfg:
-                cfg = self._generate_agent_config_by_rule(entity)
+            # 使用内置规则生成配置，不再调用 LLM
+            cfg = self._generate_agent_config_by_rule(entity)
             
             config = AgentActivityConfig(
                 agent_id=agent_id,

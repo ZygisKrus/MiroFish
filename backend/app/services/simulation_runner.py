@@ -1328,8 +1328,9 @@ class SimulationRunner:
                 if callable(original_sighup):
                     original_sighup(signum, frame)
                 else:
-                    # 默认行为：正常退出
-                    sys.exit(0)
+                    # 忽略 SIGHUP，防止在后台运行时因终端关闭而退出
+                    logger.info("收到 SIGHUP，忽略以继续运行")
+                    pass
             else:
                 # 如果原处理器不可调用（如 SIG_DFL），则使用默认行为
                 raise KeyboardInterrupt

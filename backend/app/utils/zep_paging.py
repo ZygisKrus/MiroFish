@@ -11,6 +11,7 @@ from collections.abc import Callable
 from typing import Any
 
 from zep_cloud import InternalServerError
+from zep_cloud.core.api_error import ApiError
 from zep_cloud.client import Zep
 
 from .logger import get_logger
@@ -20,7 +21,7 @@ logger = get_logger('mirofish.zep_paging')
 _DEFAULT_PAGE_SIZE = 100
 _MAX_NODES = 2000
 _DEFAULT_MAX_RETRIES = 3
-_DEFAULT_RETRY_DELAY = 2.0  # seconds, doubles each retry
+_DEFAULT_RETRY_DELAY = 12.0  # seconds, wait for rate limit reset
 
 
 def _fetch_page_with_retry(
@@ -31,7 +32,7 @@ def _fetch_page_with_retry(
     page_description: str = "page",
     **kwargs: Any,
 ) -> list[Any]:
-    """单页请求，失败时指数退避重试。仅重试网络/IO类瞬态错误。"""
+    """单页请求，失败时重试。包含对 Zep ApiError (429) 的处理。"""
     if max_retries < 1:
         raise ValueError("max_retries must be >= 1")
 
@@ -41,14 +42,19 @@ def _fetch_page_with_retry(
     for attempt in range(max_retries):
         try:
             return api_call(*args, **kwargs)
-        except (ConnectionError, TimeoutError, OSError, InternalServerError) as e:
+        except (ConnectionError, TimeoutError, OSError, InternalServerError, ApiError) as e:
             last_exception = e
+            # 如果是 ApiError 且包含 429 频率限制
+            is_rate_limit = isinstance(e, ApiError) and "429" in str(e)
+            
             if attempt < max_retries - 1:
+                wait_time = delay if is_rate_limit else (delay / 2)
                 logger.warning(
-                    f"Zep {page_description} attempt {attempt + 1} failed: {str(e)[:100]}, retrying in {delay:.1f}s..."
+                    f"Zep {page_description} attempt {attempt + 1} failed: {str(e)[:100]}, retrying in {wait_time:.1f}s..."
                 )
-                time.sleep(delay)
-                delay *= 2
+                time.sleep(wait_time)
+                if not is_rate_limit:
+                    delay *= 2
             else:
                 logger.error(f"Zep {page_description} failed after {max_retries} attempts: {str(e)}")
 

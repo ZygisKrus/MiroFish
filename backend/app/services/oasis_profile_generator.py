@@ -234,7 +234,10 @@ class OasisProfileGenerator:
         # 构建上下文信息
         context = self._build_entity_context(entity)
         
-        if use_llm:
+        # Check if it's a pseudo-entity (from fallback Markdown)
+        is_pseudo = entity.attributes.get("is_pseudo", False)
+        
+        if use_llm and not is_pseudo:
             # 使用LLM生成详细人设
             profile_data = self._generate_profile_with_llm(
                 entity_name=name,
@@ -244,13 +247,24 @@ class OasisProfileGenerator:
                 context=context
             )
         else:
-            # 使用规则生成基础人设
-            profile_data = self._generate_profile_rule_based(
-                entity_name=name,
-                entity_type=entity_type,
-                entity_summary=entity.summary,
-                entity_attributes=entity.attributes
-            )
+            # 使用规则生成基础人设 (fallback or pseudo)
+            if is_pseudo:
+                # If pseudo, the 'summary' already contains our custom hook
+                profile_data = self._generate_profile_rule_based(
+                    entity_name=name,
+                    entity_type=entity_type,
+                    entity_summary=entity.summary,
+                    entity_attributes=entity.attributes
+                )
+                # Override persona with our custom hook
+                profile_data["persona"] = entity.summary
+            else:
+                profile_data = self._generate_profile_rule_based(
+                    entity_name=name,
+                    entity_type=entity_type,
+                    entity_summary=entity.summary,
+                    entity_attributes=entity.attributes
+                )
         
         return OasisAgentProfile(
             user_id=user_id,
@@ -472,16 +486,24 @@ class OasisProfileGenerator:
                 context_parts.append("### 关联实体信息\n" + "\n".join(related_info))
         
         # 4. 使用Zep混合检索获取更丰富的信息
-        zep_results = self._search_zep_for_entity(entity)
-        
-        if zep_results.get("facts"):
-            # 去重：排除已存在的事实
-            new_facts = [f for f in zep_results["facts"] if f not in existing_facts]
-            if new_facts:
-                context_parts.append("### Zep检索到的事实信息\n" + "\n".join(f"- {f}" for f in new_facts[:15]))
-        
-        if zep_results.get("node_summaries"):
-            context_parts.append("### Zep检索到的相关节点\n" + "\n".join(f"- {s}" for s in zep_results["node_summaries"][:10]))
+        # [MIROFISH FIX] Skip Zep search for pseudo-entities or if Zep is known to be failing
+        is_pseudo = entity.attributes.get("is_pseudo", False)
+        if is_pseudo or not self.zep_client:
+            return "\n\n".join(context_parts)
+
+        try:
+            zep_results = self._search_zep_for_entity(entity)
+            
+            if zep_results.get("facts"):
+                # 去重：排除已存在的事实
+                new_facts = [f for f in zep_results["facts"] if f not in existing_facts]
+                if new_facts:
+                    context_parts.append("### Zep检索到的事实信息\n" + "\n".join(f"- {f}" for f in new_facts[:15]))
+            
+            if zep_results.get("node_summaries"):
+                context_parts.append("### Zep检索到的相关节点\n" + "\n".join(f"- {s}" for s in zep_results["node_summaries"][:10]))
+        except Exception as e:
+            logger.warning(f"Zep 检索上下文失败 (实体: {entity.name}): {e}")
         
         return "\n\n".join(context_parts)
     
@@ -571,6 +593,10 @@ class OasisProfileGenerator:
             except Exception as e:
                 logger.warning(f"LLM调用失败 (attempt {attempt+1}): {str(e)[:80]}")
                 last_error = e
+                # Fail fast on Rate Limits to avoid Thread Exhaustion
+                if "429" in str(e) or "rate limit" in str(e).lower():
+                    logger.warning("Rate limit detected, failing fast to prevent thread exhaustion.")
+                    break
                 import time
                 time.sleep(1 * (attempt + 1))  # 指数退避
         

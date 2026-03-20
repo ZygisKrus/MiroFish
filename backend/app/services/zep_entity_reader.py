@@ -212,6 +212,95 @@ class ZepEntityReader:
             logger.warning(f"获取节点 {node_uuid} 的边失败: {str(e)}")
             return []
     
+    def get_entities_from_local_seed(self) -> FilteredEntities:
+        """
+        从本地 Markdown 种子文件中解析实体（作为 Zep 超限后的兜底）
+        """
+        import os
+        import re
+        import uuid
+        
+        # 查找最新的种子文件
+        seed_paths = [
+            "domain/vu_physics/seeds/refined_mega_seed.md",
+            "domain/vu_physics/seeds/mega_seed_world_book.md"
+        ]
+        
+        target_path = None
+        for path in seed_paths:
+            # 尝试绝对路径和相对路径
+            paths_to_try = [
+                os.path.abspath(os.path.join(os.getcwd(), path)),
+                os.path.abspath(os.path.join(os.getcwd(), "backend", path)),
+                os.path.abspath(os.path.join(os.getcwd(), "..", path))
+            ]
+            for p in paths_to_try:
+                if os.path.exists(p):
+                    target_path = p
+                    break
+            if target_path: break
+        
+        if not target_path:
+            logger.warning("未找到本地种子文件，无法进行本地解析")
+            return FilteredEntities(entities=[], entity_types=set(), total_count=0, filtered_count=0)
+            
+        logger.info(f"正在从本地种子解析实体: {target_path}")
+        
+        try:
+            with open(target_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+                
+            # 解析格式: - **Name** (Major, Year, MBTI): Hook text
+            # 正则解释: 匹配列表项，提取加粗姓名，括号内的专业、年级、MBTI，以及冒号后的内容
+            pattern = r"- \*\*([^*]+)\*\* \(([^,]+),\s*([^,]+),\s*([^)]+)\):\s*(.+)"
+            matches = list(re.finditer(pattern, content))
+            
+            entities = []
+            entity_types = set()
+            
+            for i, match in enumerate(matches):
+                name = match.group(1).strip()
+                major = match.group(2).strip()
+                year = match.group(3).strip()
+                mbti = match.group(4).strip()
+                hook = match.group(5).strip()
+                
+                # 映射专业到实体类型
+                etype = "PhysicsStudent"
+                if "Law" in major or "TF" in major: etype = "LawStudent"
+                elif "Economics" in major or "EVAF" in major: etype = "EconomicsStudent"
+                elif "Communications" in major or "KF" in major: etype = "CommStudent"
+                
+                entity_types.add(etype)
+                
+                # 创建伪实体节点
+                node = EntityNode(
+                    uuid=str(uuid.uuid5(uuid.NAMESPACE_DNS, f"mirofish.{name}")),
+                    name=name,
+                    labels=["Entity", etype],
+                    summary=hook,
+                    attributes={
+                        "major": major,
+                        "study_year": year,
+                        "mbti": mbti,
+                        "original_hook": hook,
+                        "is_pseudo": True
+                    }
+                )
+                entities.append(node)
+                
+            logger.info(f"本地解析完成: 找到 {len(entities)} 个实体")
+            return FilteredEntities(
+                entities=entities,
+                entity_types=entity_types,
+                total_count=len(entities),
+                filtered_count=len(entities)
+            )
+            
+        except Exception as e:
+            logger.error(f"本地种子解析失败: {e}")
+            return FilteredEntities(entities=[], entity_types=set(), total_count=0, filtered_count=0)
+
     def filter_defined_entities(
         self, 
         graph_id: str,
@@ -219,19 +308,26 @@ class ZepEntityReader:
         enrich_with_edges: bool = True
     ) -> FilteredEntities:
         """
-        筛选出符合预定义实体类型的节点
-        
-        筛选逻辑：
-        - 如果节点的Labels只有一个"Entity"，说明这个实体不符合我们预定义的类型，跳过
-        - 如果节点的Labels包含除"Entity"和"Node"之外的标签，说明符合预定义类型，保留
-        
-        Args:
-            graph_id: 图谱ID
-            defined_entity_types: 预定义的实体类型列表（可选，如果提供则只保留这些类型）
-            enrich_with_edges: 是否获取每个实体的相关边信息
-            
-        Returns:
-            FilteredEntities: 过滤后的实体集合
+        筛选出符合预定义实体类型的节点。
+        如果 Zep 访问受限（403/429），自动激活本地回退解析。
+        """
+        try:
+            return self._filter_defined_entities_logic(graph_id, defined_entity_types, enrich_with_edges)
+        except Exception as e:
+            err_msg = str(e).lower()
+            if "403" in err_msg or "429" in err_msg or "forbidden" in err_msg or "limit" in err_msg:
+                logger.warning(f"Zep 访问受限 ({err_msg})，激活本地种子回退机制...")
+                return self.get_entities_from_local_seed()
+            raise
+
+    def _filter_defined_entities_logic(
+        self, 
+        graph_id: str,
+        defined_entity_types: Optional[List[str]] = None,
+        enrich_with_edges: bool = True
+    ) -> FilteredEntities:
+        """
+        原有的 Zep 筛选逻辑
         """
         logger.info(f"开始筛选图谱 {graph_id} 的实体...")
         

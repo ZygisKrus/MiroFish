@@ -277,12 +277,22 @@ class SimulationManager:
             if progress_callback:
                 progress_callback("reading", 30, "正在读取节点数据...")
             
-            filtered = reader.filter_defined_entities(
-                graph_id=state.graph_id,
-                defined_entity_types=defined_entity_types,
-                enrich_with_edges=True
-            )
+            # [MIROFISH FIX] Try to use the local seed file if Zep fails or for VU Physics specifically
+            try:
+                filtered = reader.filter_defined_entities(
+                    graph_id=state.graph_id,
+                    defined_entity_types=defined_entity_types,
+                    enrich_with_edges=True
+                )
+            except Exception as e:
+                logger.warning(f"Zep 读取失败，尝试本地种子回退: {e}")
+                filtered = reader.get_entities_from_local_seed()
             
+            # If still empty, force local seed for this specific project
+            if filtered.filtered_count == 0:
+                logger.info("Zep 为空，强制激活本地种子解析")
+                filtered = reader.get_entities_from_local_seed()
+
             state.entities_count = filtered.filtered_count
             state.entity_types = list(filtered.entity_types)
             
