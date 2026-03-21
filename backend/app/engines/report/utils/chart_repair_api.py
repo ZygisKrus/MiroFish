@@ -387,7 +387,7 @@ def create_llm_repair_functions() -> List:
                 client = LLMClient(
                     api_key=settings.REPORT_ENGINE_API_KEY,
                     base_url=settings.REPORT_ENGINE_BASE_URL,
-                    model_name=settings.REPORT_ENGINE_MODEL_NAME or "gpt-4",
+                    model_name=settings.REPORT_ENGINE_MODEL_NAME or "nvidia/nemotron-3-super-120b-a12b:free",
                 )
 
                 prompt = build_chart_repair_prompt(widget_block, errors)
@@ -422,7 +422,7 @@ def create_llm_repair_functions() -> List:
                 client = LLMClient(
                     api_key=settings.FORUM_HOST_API_KEY,
                     base_url=settings.FORUM_HOST_BASE_URL,
-                    model_name=settings.FORUM_HOST_MODEL_NAME or "gpt-4",
+                    model_name=settings.FORUM_HOST_MODEL_NAME or "nvidia/nemotron-3-super-120b-a12b:free",
                 )
 
                 prompt = build_chart_repair_prompt(widget_block, errors)
@@ -456,7 +456,7 @@ def create_llm_repair_functions() -> List:
                 client = LLMClient(
                     api_key=settings.INSIGHT_ENGINE_API_KEY,
                     base_url=settings.INSIGHT_ENGINE_BASE_URL,
-                    model_name=settings.INSIGHT_ENGINE_MODEL_NAME or "gpt-4",
+                    model_name=settings.INSIGHT_ENGINE_MODEL_NAME or "nvidia/nemotron-3-super-120b-a12b:free",
                 )
 
                 prompt = build_chart_repair_prompt(widget_block, errors)
@@ -490,7 +490,7 @@ def create_llm_repair_functions() -> List:
                 client = LLMClient(
                     api_key=settings.MEDIA_ENGINE_API_KEY,
                     base_url=settings.MEDIA_ENGINE_BASE_URL,
-                    model_name=settings.MEDIA_ENGINE_MODEL_NAME or "gpt-4",
+                    model_name=settings.MEDIA_ENGINE_MODEL_NAME or "nvidia/nemotron-3-super-120b-a12b:free",
                 )
 
                 prompt = build_chart_repair_prompt(widget_block, errors)
@@ -543,7 +543,7 @@ def create_table_repair_functions() -> List:
                 client = LLMClient(
                     api_key=settings.REPORT_ENGINE_API_KEY,
                     base_url=settings.REPORT_ENGINE_BASE_URL,
-                    model_name=settings.REPORT_ENGINE_MODEL_NAME or "gpt-4",
+                    model_name=settings.REPORT_ENGINE_MODEL_NAME or "nvidia/nemotron-3-super-120b-a12b:free",
                 )
 
                 prompt = build_table_repair_prompt(table_block, errors)
@@ -597,7 +597,7 @@ def create_wordcloud_repair_functions() -> List:
                 client = LLMClient(
                     api_key=settings.REPORT_ENGINE_API_KEY,
                     base_url=settings.REPORT_ENGINE_BASE_URL,
-                    model_name=settings.REPORT_ENGINE_MODEL_NAME or "gpt-4",
+                    model_name=settings.REPORT_ENGINE_MODEL_NAME or "nvidia/nemotron-3-super-120b-a12b:free",
                 )
 
                 prompt = build_wordcloud_repair_prompt(widget_block, errors)

@@ -45,16 +45,16 @@ class Settings(BaseSettings):
     MAX_PARAGRAPHS: int = Field(5, description="最大段落数")
     
     MINDSPIDER_API_KEY: Optional[str] = Field(None, description="MindSpider API密钥")
-    MINDSPIDER_BASE_URL: Optional[str] = Field("https://api.deepseek.com", description="MindSpider LLM接口BaseUrl")
-    MINDSPIDER_MODEL_NAME: str = Field("deepseek-reasoner", description="MindSpider LLM模型名称，如deepseek-reasoner")
+    MINDSPIDER_BASE_URL: Optional[str] = Field("https://openrouter.ai/api/v1", description="MindSpider LLM接口BaseUrl")
+    MINDSPIDER_MODEL_NAME: str = Field("stepfun/step-3.5-flash:free", description="MindSpider LLM模型名称")
     
     OUTPUT_DIR: str = Field("reports", description="输出目录")
     SAVE_INTERMEDIATE_STATES: bool = Field(True, description="是否保存中间状态")
 
     
-    QUERY_ENGINE_API_KEY: str = Field(None, description="Query Agent（推荐DeepSeek，https://www.deepseek.com/）API密钥")
-    QUERY_ENGINE_BASE_URL: Optional[str] = Field("https://api.deepseek.com", description="Query Agent LLM接口BaseUrl")
-    QUERY_ENGINE_MODEL_NAME: str = Field("deepseek-reasoner", description="Query Agent LLM模型，如deepseek-reasoner")
+    QUERY_ENGINE_API_KEY: str = Field(None, description="Query Agent API密钥")
+    QUERY_ENGINE_BASE_URL: Optional[str] = Field("https://openrouter.ai/api/v1", description="Query Agent LLM接口BaseUrl")
+    QUERY_ENGINE_MODEL_NAME: str = Field("stepfun/step-3.5-flash:free", description="Query Agent LLM模型")
     
     REPORT_ENGINE_API_KEY: str = Field(None, description="Report Agent（推荐Gemini，这里我用了一个中转厂商，你也可以换成你自己的，申请地址：https://www.chataiapi.com/）API密钥")
     REPORT_ENGINE_BASE_URL: Optional[str] = Field("https://www.chataiapi.com/v1", description="Report Agent LLM接口BaseUrl")

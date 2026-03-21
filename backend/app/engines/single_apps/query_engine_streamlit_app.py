@@ -57,8 +57,8 @@ def main():
         auto_search = query_params.get('auto_search', ['false'])[0].lower() == 'true'
 
     # ----- 配置被硬编码 -----
-    # 强制使用 DeepSeek
-    model_name = settings.QUERY_ENGINE_MODEL_NAME or "deepseek-chat"
+    # 模型配置
+    model_name = settings.QUERY_ENGINE_MODEL_NAME or "stepfun/step-3.5-flash:free"
     # 默认高级配置
     max_reflections = 2
     max_content_length = 20000
@@ -94,7 +94,7 @@ def main():
             st.error("请输入研究查询")
             return
 
-        # 由于强制使用DeepSeek，检查相关的API密钥
+        # 检查相关的API密钥
         if not settings.QUERY_ENGINE_API_KEY:
             st.error("请在您的环境变量中设置QUERY_ENGINE_API_KEY")
             return
