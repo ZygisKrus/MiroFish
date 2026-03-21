@@ -11,7 +11,7 @@ class MindSpiderLite:
         load_dotenv("/home/zygis/MiroFish/.env")
         self.api_key = os.environ.get("LLM_API_KEY")
         self.base_url = "https://openrouter.ai/api/v1"
-        self.model = "anthropic/claude-3.5-sonnet" # Use the smarter model for generating the seed
+        self.model = "nvidia/nemotron-3-super-120b-a12b:free" # Use the smarter model for generating the seed
         self.headers = {"User-Agent": "Mozilla/5.0"}
 
 

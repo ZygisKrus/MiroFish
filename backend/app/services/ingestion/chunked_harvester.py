@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 load_dotenv("/home/zygis/MiroFish/.env")
 API_KEY = os.environ.get("LLM_API_KEY")
 BASE_URL = os.environ.get("LLM_BASE_URL", "https://openrouter.ai/api/v1")
-MODEL = os.environ.get("LLM_REASONING_MODEL", "anthropic/claude-3.5-sonnet")
+MODEL = os.environ.get("LLM_REASONING_MODEL", "nvidia/nemotron-3-super-120b-a12b:free")
 
 def call_llm(prompt: str, expect_json: bool = False):
     payload = {
