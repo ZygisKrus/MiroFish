@@ -30,7 +30,7 @@ class Config:
     # LLM配置（统一使用OpenAI格式）
     LLM_API_KEY = os.environ.get('LLM_API_KEY')
     LLM_BASE_URL = os.environ.get('LLM_BASE_URL', 'https://openrouter.ai/api/v1')
-    LLM_MODEL_NAME = os.environ.get('LLM_MODEL_NAME', 'minimax/minimax-m2.5:free')
+    LLM_MODEL_NAME = os.environ.get('LLM_MODEL_NAME', 'stepfun/step-3.5-flash:free')
     LLM_REASONING_MODEL = os.environ.get('LLM_REASONING_MODEL', 'nvidia/nemotron-3-super-120b-a12b:free')
     
     # Zep配置

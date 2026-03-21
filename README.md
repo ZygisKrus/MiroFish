@@ -30,10 +30,10 @@ Detailed architecture can be found in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.m
 ### 1. Setup Environment
 Create a `.env` in the root:
 ```env
-# Muscle (Minimax)
+# Muscle (StepFun)
 LLM_API_KEY=your_key
 LLM_BASE_URL=https://openrouter.ai/api/v1
-LLM_MODEL_NAME=minimax/minimax-m2.5:free
+LLM_MODEL_NAME=stepfun/step-3.5-flash:free
 
 # Brain (Nemotron 3 Super)
 LLM_REASONING_MODEL=nvidia/nemotron-3-super-120b-a12b:free
