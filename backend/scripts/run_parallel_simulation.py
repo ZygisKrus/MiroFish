@@ -1226,6 +1226,10 @@ async def run_twitter_simulation(
     start_time = datetime.now()
     
     for round_num in range(total_rounds):
+        # 严格检查轮次限制，防止异步导致的额外轮次
+        if round_num >= total_rounds:
+            break
+            
         # 检查是否收到退出信号
         if _shutdown_event and _shutdown_event.is_set():
             if main_logger:
@@ -1425,6 +1429,10 @@ async def run_reddit_simulation(
     start_time = datetime.now()
     
     for round_num in range(total_rounds):
+        # 严格检查轮次限制，防止异步导致的额外轮次
+        if round_num >= total_rounds:
+            break
+            
         # 检查是否收到退出信号
         if _shutdown_event and _shutdown_event.is_set():
             if main_logger:

@@ -30,12 +30,12 @@ class Config:
     # LLM配置（统一使用OpenAI格式）
     LLM_API_KEY = os.environ.get('LLM_API_KEY')
     LLM_BASE_URL = os.environ.get('LLM_BASE_URL', 'https://openrouter.ai/api/v1')
-    LLM_MODEL_NAME = os.environ.get('LLM_MODEL_NAME', 'stepfun/step-3.5-flash:free')
-    LLM_REASONING_MODEL = os.environ.get('LLM_REASONING_MODEL', 'nvidia/nemotron-3-super-120b-a12b:free')
+    LLM_MODEL_NAME = os.environ.get('LLM_MODEL_NAME', 'minimax/minimax-m2.5:free')
+    LLM_REASONING_MODEL = os.environ.get('LLM_REASONING_MODEL', 'minimax/minimax-m2.5:free')
     
     # Zep配置
-    ZEP_API_KEY = os.environ.get('ZEP_API_KEY')
-    ZEP_API_URL = os.environ.get('ZEP_API_URL')
+    ZEP_API_KEY = os.environ.get('ZEP_API_KEY', '')
+    ZEP_API_URL = os.environ.get('ZEP_API_URL', 'http://localhost:8000')
     
     # 文件上传配置
     MAX_CONTENT_LENGTH = 50 * 1024 * 1024  # 50MB
@@ -84,7 +84,5 @@ class Config:
         errors = []
         if not cls.LLM_API_KEY:
             errors.append("LLM_API_KEY 未配置")
-        if not cls.ZEP_API_KEY:
-            errors.append("ZEP_API_KEY 未配置")
         return errors
 

@@ -299,8 +299,11 @@ class ReportAgent:
                 enqueue=False,      # 禁用异步队列，同步写入
                 buffering=1,        # 行缓冲，每行立即写入
                 serialize=False,    # 普通文本格式，不序列化为JSON
-                encoding="utf-8",   # 明确UTF-8编码
-                mode="a",           # 追加模式
+                encoding="utf-8",
+                rotation="10 MB",   # 超过10MB自动轮转
+                retention="7 days", # 保留7天日志
+                compression="zip",  # 压缩旧日志
+            )
                 filter=_exclude_other_engines # 过滤掉四个 Engine 的日志，保留其余信息
             )
             logger.debug(f"已添加日志handler (ID: {handler_id}): {self.config.LOG_FILE}")

@@ -13,7 +13,7 @@ import json
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass, field
 
-from zep_cloud.client import Zep
+from ..utils.zep_client_factory import get_zep_client
 
 from ..config import Config
 from ..utils.logger import get_logger
@@ -423,14 +423,7 @@ class ZepToolsService:
     
     def __init__(self, api_key: Optional[str] = None, llm_client: Optional[LLMClient] = None):
         self.api_key = api_key or Config.ZEP_API_KEY
-        if not self.api_key:
-            raise ValueError("ZEP_API_KEY 未配置")
-        
-        zep_kwargs = {"api_key": self.api_key}
-        if Config.ZEP_API_URL:
-            zep_kwargs["base_url"] = Config.ZEP_API_URL
-        self.client = Zep(**zep_kwargs)
-        # LLM客户端用于InsightForge生成子问题
+        self.client = get_zep_client(self.api_key)
         self._llm_client = llm_client
         logger.info("ZepToolsService 初始化完成")
     

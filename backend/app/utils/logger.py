@@ -68,7 +68,7 @@ def setup_logger(name: str = 'mirofish', level: int = logging.DEBUG) -> logging.
     file_handler = RotatingFileHandler(
         os.path.join(LOG_DIR, log_filename),
         maxBytes=10 * 1024 * 1024,  # 10MB
-        backupCount=5,
+        backupCount=7,              # 保留最近7个日志文件
         encoding='utf-8'
     )
     file_handler.setLevel(logging.DEBUG)

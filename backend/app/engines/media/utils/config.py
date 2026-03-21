@@ -30,11 +30,11 @@ class Settings(BaseSettings):
     # ======================= LLM 相关 =======================
     INSIGHT_ENGINE_API_KEY: str = Field(None, description="Insight Agent API密钥")
     INSIGHT_ENGINE_BASE_URL: Optional[str] = Field("https://openrouter.ai/api/v1", description="Insight Agent LLM接口BaseUrl")
-    INSIGHT_ENGINE_MODEL_NAME: str = Field("stepfun/step-3.5-flash:free", description="Insight Agent LLM模型名称")
+    INSIGHT_ENGINE_MODEL_NAME: str = Field("minimax/minimax-m2.5:free", description="Insight Agent LLM模型名称")
     
     MEDIA_ENGINE_API_KEY: str = Field(None, description="Media Agent API密钥")
     MEDIA_ENGINE_BASE_URL: Optional[str] = Field("https://openrouter.ai/api/v1", description="Media Agent LLM接口BaseUrl")
-    MEDIA_ENGINE_MODEL_NAME: str = Field("nvidia/nemotron-3-super-120b-a12b:free", description="Media Agent LLM模型名称")
+    MEDIA_ENGINE_MODEL_NAME: str = Field("minimax/minimax-m2.5:free", description="Media Agent LLM模型名称")
     
     BOCHA_WEB_SEARCH_API_KEY: Optional[str] = Field(None, description="Bocha Web Search API Key")
     BOCHA_API_KEY: Optional[str] = Field(None, description="Bocha 兼容键（别名）")
@@ -46,7 +46,7 @@ class Settings(BaseSettings):
     
     MINDSPIDER_API_KEY: Optional[str] = Field(None, description="MindSpider API密钥")
     MINDSPIDER_BASE_URL: Optional[str] = Field("https://openrouter.ai/api/v1", description="MindSpider LLM接口BaseUrl")
-    MINDSPIDER_MODEL_NAME: str = Field("stepfun/step-3.5-flash:free", description="MindSpider LLM模型名称")
+    MINDSPIDER_MODEL_NAME: str = Field("minimax/minimax-m2.5:free", description="MindSpider LLM模型名称")
     
     OUTPUT_DIR: str = Field("reports", description="输出目录")
     SAVE_INTERMEDIATE_STATES: bool = Field(True, description="是否保存中间状态")
@@ -54,19 +54,19 @@ class Settings(BaseSettings):
     
     QUERY_ENGINE_API_KEY: str = Field(None, description="Query Agent API密钥")
     QUERY_ENGINE_BASE_URL: Optional[str] = Field("https://openrouter.ai/api/v1", description="Query Agent LLM接口BaseUrl")
-    QUERY_ENGINE_MODEL_NAME: str = Field("stepfun/step-3.5-flash:free", description="Query Agent LLM模型")
+    QUERY_ENGINE_MODEL_NAME: str = Field("minimax/minimax-m2.5:free", description="Query Agent LLM模型")
     
     REPORT_ENGINE_API_KEY: str = Field(None, description="Report Agent API密钥")
     REPORT_ENGINE_BASE_URL: Optional[str] = Field("https://openrouter.ai/api/v1", description="Report Agent LLM接口BaseUrl")
-    REPORT_ENGINE_MODEL_NAME: str = Field("nvidia/nemotron-3-super-120b-a12b:free", description="Report Agent LLM模型")
+    REPORT_ENGINE_MODEL_NAME: str = Field("minimax/minimax-m2.5:free", description="Report Agent LLM模型")
     
     FORUM_HOST_API_KEY: str = Field(None, description="Forum Host API密钥")
     FORUM_HOST_BASE_URL: Optional[str] = Field("https://openrouter.ai/api/v1", description="Forum Host LLM BaseUrl")
-    FORUM_HOST_MODEL_NAME: str = Field("nvidia/nemotron-3-super-120b-a12b:free", description="Forum Host LLM模型名")
+    FORUM_HOST_MODEL_NAME: str = Field("minimax/minimax-m2.5:free", description="Forum Host LLM模型名")
     
     KEYWORD_OPTIMIZER_API_KEY: str = Field(None, description="SQL keyword Optimizer API密钥")
     KEYWORD_OPTIMIZER_BASE_URL: Optional[str] = Field("https://openrouter.ai/api/v1", description="Keyword Optimizer BaseUrl")
-    KEYWORD_OPTIMIZER_MODEL_NAME: str = Field("stepfun/step-3.5-flash:free", description="Keyword Optimizer LLM模型名称")
+    KEYWORD_OPTIMIZER_MODEL_NAME: str = Field("minimax/minimax-m2.5:free", description="Keyword Optimizer LLM模型名称")
 
     # ================== 网络工具配置 ====================
     TAVILY_API_KEY: str = Field(None, description="Tavily API（申请地址：https://www.tavily.com/）API密钥，用于Tavily网络搜索")
