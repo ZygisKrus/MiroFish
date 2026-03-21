@@ -30,13 +30,13 @@ Detailed architecture can be found in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.m
 ### 1. Setup Environment
 Create a `.env` in the root:
 ```env
-# Muscle (DeepSeek V3)
+# Muscle (Minimax)
 LLM_API_KEY=your_key
 LLM_BASE_URL=https://openrouter.ai/api/v1
-LLM_MODEL_NAME=deepseek/deepseek-chat
+LLM_MODEL_NAME=minimax/minimax-m2.5:free
 
-# Brain (Claude 3.5 Sonnet)
-LLM_REASONING_MODEL=anthropic/claude-3.5-sonnet
+# Brain (Nemotron 3 Super)
+LLM_REASONING_MODEL=nvidia/nemotron-3-super-120b-a12b:free
 
 # Memory
 ZEP_API_KEY=your_zep_key
