@@ -4,7 +4,7 @@
 
 from typing import Optional
 from zep_python import Zep
-from app.config import Config
+from ..config import Config
 
 def get_zep_client(api_key: Optional[str] = None) -> Zep:
     """

@@ -239,7 +239,7 @@ class ZepGraphMemoryUpdater:
         self.graph_id = graph_id
         self.api_key = api_key or Config.ZEP_API_KEY
         
-        from app.utils.zep_client_factory import get_zep_client
+        from ..utils.zep_client_factory import get_zep_client
         self.client = get_zep_client(self.api_key)
         # 活动队列
         self._activity_queue: Queue = Queue()
