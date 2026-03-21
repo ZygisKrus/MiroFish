@@ -6,13 +6,9 @@ services:
     container_name: zep-server
     ports:
       - "8000:8000"
-    environment:
-      - ZEP_STORE_POSTGRES_DSN=postgres://postgres:postgres@db:5432/zep?sslmode=disable
-      - ZEP_NLP_EXTRACTORS_MESSAGES_ENTITIES=true
-      - ZEP_NLP_EXTRACTORS_DOCUMENTS_ENTITIES=true
-      - ZEP_MEMORY_MESSAGE_WINDOW=12
-      - ZEP_LOG_LEVEL=info
-      # No auth by default for local dev
+    volumes:
+      - ./config-zep.yaml:/app/config.yaml
+    command: ["--config", "/app/config.yaml"]
     depends_on:
       db:
         condition: service_healthy

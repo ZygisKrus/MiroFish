@@ -1,0 +1,39 @@
+llm:
+  service: "openai"
+  model: "gpt-4o-mini"
+  openai_endpoint:
+  openai_org_id:
+nlp:
+  server_url: "http://localhost:5557"
+memory:
+  message_window: 12
+extractors:
+  documents:
+    embeddings:
+      enabled: false
+  messages:
+    summarizer:
+      enabled: false
+      entities:
+        enabled: false
+      embeddings:
+        enabled: false
+    entities:
+      enabled: false
+    intent:
+      enabled: false
+    embeddings:
+      enabled: false
+store:
+  type: "postgres"
+  postgres:
+    dsn: "postgres://postgres:postgres@db:5432/zep?sslmode=disable"
+server:
+  host: 0.0.0.0
+  port: 8000
+  web_enabled: true
+auth:
+  required: false
+  secret: "local-dev-secret"
+log:
+  level: "info"
