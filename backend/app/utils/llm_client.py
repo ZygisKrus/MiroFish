@@ -7,6 +7,7 @@ import json
 import re
 from typing import Optional, Dict, Any, List
 from openai import OpenAI
+from tenacity import retry, wait_exponential, stop_after_attempt, retry_if_exception_type
 
 from ..config import Config
 
@@ -32,6 +33,16 @@ class LLMClient:
             base_url=self.base_url
         )
     
+    @retry(
+        wait=wait_exponential(multiplier=1, min=4, max=60),
+        stop=stop_after_attempt(5),
+        retry=retry_if_exception_type(Exception),
+        reraise=True
+    )
+    def _create_completion_with_retry(self, **kwargs):
+        """带有指数退避重试的底层调用"""
+        return self.client.chat.completions.create(**kwargs)
+
     def chat(
         self,
         messages: List[Dict[str, str]],
@@ -58,13 +69,14 @@ class LLMClient:
             "messages": messages,
             "temperature": temperature,
             "max_tokens": max_tokens,
+            "timeout": timeout
         }
         
         if response_format:
             kwargs["response_format"] = response_format
         
-        # Add explicit timeout to prevent infinite hangs
-        response = self.client.chat.completions.create(timeout=timeout, **kwargs)
+        # 使用带有重试机制的调用，防止 OpenRouter 429 Rate Limit
+        response = self._create_completion_with_retry(**kwargs)
         content = response.choices[0].message.content
         # 部分模型（如MiniMax M2.5）会在content中包含<think>思考内容，需要移除
         content = re.sub(r'<think>[\s\S]*?</think>', '', content).strip()

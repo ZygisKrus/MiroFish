@@ -204,7 +204,10 @@ class OasisProfileGenerator:
         
         if self.zep_api_key:
             try:
-                self.zep_client = Zep(api_key=self.zep_api_key)
+                zep_kwargs = {"api_key": self.zep_api_key}
+                if Config.ZEP_API_URL:
+                    zep_kwargs["base_url"] = Config.ZEP_API_URL
+                self.zep_client = Zep(**zep_kwargs)
             except Exception as e:
                 logger.warning(f"Zep客户端初始化失败: {e}")
     
