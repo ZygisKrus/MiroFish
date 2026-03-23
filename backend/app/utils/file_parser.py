@@ -6,6 +6,9 @@
 import os
 from pathlib import Path
 from typing import List, Optional
+from .logger import get_logger
+
+logger = get_logger("mirofish.file_parser")
 
 
 def _read_text_with_fallback(file_path: str) -> str:
@@ -29,8 +32,8 @@ def _read_text_with_fallback(file_path: str) -> str:
     # 首先尝试 UTF-8
     try:
         return data.decode('utf-8')
-    except UnicodeDecodeError:
-        pass
+    except UnicodeDecodeError as e:
+        logger.debug(f"Failed to decode {file_path} as utf-8: {e}")
     
     # 尝试使用 charset_normalizer 检测编码
     encoding = None
@@ -39,8 +42,8 @@ def _read_text_with_fallback(file_path: str) -> str:
         best = from_bytes(data).best()
         if best and best.encoding:
             encoding = best.encoding
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug(f"charset_normalizer detection failed for {file_path}: {e}")
     
     # 回退到 chardet
     if not encoding:
@@ -48,8 +51,8 @@ def _read_text_with_fallback(file_path: str) -> str:
             import chardet
             result = chardet.detect(data)
             encoding = result.get('encoding') if result else None
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"chardet detection failed for {file_path}: {e}")
     
     # 最终兜底：使用 UTF-8 + replace
     if not encoding:

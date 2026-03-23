@@ -175,35 +175,31 @@ class ZepEntityReader:
         logger.info(f"共获取 {len(edges_data)} 条边")
         return edges_data
     
-    def get_node_edges(self, node_uuid: str) -> List[Dict[str, Any]]:
+    def get_node_edges(self, graph_id: str, node_uuid: str) -> List[Dict[str, Any]]:
         """
-        获取指定节点的所有相关边（带重试机制）
+        获取指定节点的所有相关边
+        
+        通过获取图谱所有边，然后过滤出与指定节点相关的边
         
         Args:
+            graph_id: 图谱ID
             node_uuid: 节点UUID
             
         Returns:
             边列表
         """
         try:
-            # 使用重试机制调用Zep API
-            edges = self._call_with_retry(
-                func=lambda: self.client.graph.node.get_entity_edges(node_uuid=node_uuid),
-                operation_name=f"获取节点边(node={node_uuid[:8]}...)"
-            )
+            # 获取图谱所有边，然后过滤
+            all_edges = self.get_all_edges(graph_id)
             
-            edges_data = []
-            for edge in edges:
-                edges_data.append({
-                    "uuid": getattr(edge, 'uuid_', None) or getattr(edge, 'uuid', ''),
-                    "name": edge.name or "",
-                    "fact": edge.fact or "",
-                    "source_node_uuid": edge.source_node_uuid,
-                    "target_node_uuid": edge.target_node_uuid,
-                    "attributes": edge.attributes or {},
-                })
+            result = []
+            for edge in all_edges:
+                # 检查边是否与指定节点相关（作为源或目标）
+                if edge.get("source_node_uuid") == node_uuid or edge.get("target_node_uuid") == node_uuid:
+                    result.append(edge)
             
-            return edges_data
+            logger.info(f"找到 {len(result)} 条与节点相关的边")
+            return result
         except Exception as e:
             logger.warning(f"获取节点 {node_uuid} 的边失败: {str(e)}")
             return []
@@ -285,7 +281,11 @@ class ZepEntityReader:
                 )
                 entities.append(node)
                 
-            logger.info(f"本地解析完成: 找到 {len(entities)} 个实体")
+            logger.info(f"本地解析完成: 找到 {len(entities)} 个实体, 截断至150个")
+            
+            # Enforce strict 150 agent limit for the simulation
+            entities = entities[:150]
+            
             return FilteredEntities(
                 entities=entities,
                 entity_types=entity_types,
@@ -448,7 +448,7 @@ class ZepEntityReader:
                 return None
             
             # 获取节点的边
-            edges = self.get_node_edges(entity_uuid)
+            edges = self.get_node_edges(graph_id, entity_uuid)
             
             # 获取所有节点用于关联查找
             all_nodes = self.get_all_nodes(graph_id)

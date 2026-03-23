@@ -1,0 +1,39 @@
+
+> mirofish@0.1.0 backend
+> cd backend && uv run python run.py
+
+[37m⠋[0m [2mPreparing packages...[0m (0/0)                                                   [2K[37m⠋[0m [2mPreparing packages...[0m (0/1)                                                   [2K[37m⠙[0m [2mPreparing packages...[0m (0/1)                                                   [2K   [36m[1mBuilding[0m[39m mirofish-backend[2m @ file:///app/backend[0m
+[37m⠙[0m [2mPreparing packages...[0m (0/1)                                                   [1A[2K[1B[2K[1A   [36m[1mBuilding[0m[39m mirofish-backend[2m @ file:///app/backend[0m
+[37m⠹[0m [2mPreparing packages...[0m (0/1)                                                   [1A[2K[1B[2K[1A   [36m[1mBuilding[0m[39m mirofish-backend[2m @ file:///app/backend[0m
+[37m⠸[0m [2mPreparing packages...[0m (0/1)                                                   [1A[2K[1B[2K[1A   [36m[1mBuilding[0m[39m mirofish-backend[2m @ file:///app/backend[0m
+[37m⠼[0m [2mPreparing packages...[0m (0/1)                                                   [1A[2K[1B[2K[1A   [36m[1mBuilding[0m[39m mirofish-backend[2m @ file:///app/backend[0m
+[37m⠴[0m [2mPreparing packages...[0m (0/1)                                                   [1A[2K[1B[2K[1A   [36m[1mBuilding[0m[39m mirofish-backend[2m @ file:///app/backend[0m
+[37m⠦[0m [2mPreparing packages...[0m (0/1)                                                   [1A[2K[1B[2K[1A   [36m[1mBuilding[0m[39m mirofish-backend[2m @ file:///app/backend[0m
+[37m⠧[0m [2mPreparing packages...[0m (0/1)                                                   [1A[2K[1B[2K[1A   [36m[1mBuilding[0m[39m mirofish-backend[2m @ file:///app/backend[0m
+[37m⠇[0m [2mPreparing packages...[0m (0/1)                                                   [1A[2K[1B[2K[1A      [32m[1mBuilt[0m[39m mirofish-backend[2m @ file:///app/backend[0m
+[37m⠇[0m [2mPreparing packages...[0m (0/1)                                                   [2K[37m⠇[0m [2m[0m (1/1)                                                                        [2K[2mUninstalled [1m1 package[0m [2min 1ms[0m[0m
+░░░░░░░░░░░░░░░░░░░░ [0/0] [2mInstalling wheels...                                 [0m[2K░░░░░░░░░░░░░░░░░░░░ [0/1] [2mInstalling wheels...                                 [0m[2K░░░░░░░░░░░░░░░░░░░░ [0/1] [2mmirofish-backend==0.1.0 (from file:///app/backend)   [0m[2K████████████████████ [1/1] [2mmirofish-backend==0.1.0 (from file:///app/backend)   [0m[2K[2mInstalled [1m1 package[0m [2min 1ms[0m[0m
+
+> mirofish@0.1.0 backend
+> cd backend && uv run python run.py
+
+
+> mirofish@0.1.0 backend
+> cd backend && uv run python run.py
+
+
+> mirofish@0.1.0 backend
+> cd backend && uv run python run.py
+
+
+> mirofish@0.1.0 backend
+> cd backend && uv run python run.py
+
+
+> mirofish@0.1.0 backend
+> cd backend && uv run python run.py
+
+
+> mirofish@0.1.0 backend
+> cd backend && uv run python run.py
+

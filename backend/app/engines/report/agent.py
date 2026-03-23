@@ -303,8 +303,7 @@ class ReportAgent:
                 rotation="10 MB",   # 超过10MB自动轮转
                 retention="7 days", # 保留7天日志
                 compression="zip",  # 压缩旧日志
-            )
-                filter=_exclude_other_engines # 过滤掉四个 Engine 的日志，保留其余信息
+                filter=_exclude_other_engines, # 过滤掉四个 Engine 的日志，保留其余信息
             )
             logger.debug(f"已添加日志handler (ID: {handler_id}): {self.config.LOG_FILE}")
 

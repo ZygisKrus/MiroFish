@@ -1,0 +1,537 @@
+﻿diff --git a/Dockerfile b/Dockerfile
+index e656468..def8d15 100644
+--- a/Dockerfile
++++ b/Dockerfile
+@@ -1,12 +1,25 @@
+-FROM python:3.11
++FROM ubuntu:22.04
+ 
+-# σ«ëΦúà Node.js ∩╝êµ╗íΦ╢│ >=18∩╝ëσÅèσ┐àΦªüσ╖Ñσà╖
+-RUN apt-get update \
+-  && apt-get install -y --no-install-recommends nodejs npm \
+-  && rm -rf /var/lib/apt/lists/*
++# Θü┐σàìΣ║ñΣ║ÆµÅÉτñ║
++ENV DEBIAN_FRONTEND=noninteractive
+ 
+-# Σ╗Ä uv σ«ÿµû╣Θò£σâÅσñìσê╢ uv
+-COPY --from=ghcr.io/astral-sh/uv:0.9.26 /uv /uvx /bin/
++# σ«ëΦúà Python3, Node.js (v20) σÅèσ┐àΦªüσ╖Ñσà╖
++RUN apt-get update && apt-get install -y --no-install-recommends \
++    curl \
++    ca-certificates \
++    python3 \
++    python3-pip \
++    python3-venv \
++    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
++    && apt-get install -y nodejs \
++    && rm -rf /var/lib/apt/lists/*
++
++# Σ╕║ python σê¢σ╗║Φ╜»Θô╛µÄÑ
++RUN ln -s /usr/bin/python3 /usr/bin/python
++
++# σ«ëΦúà uv
++RUN pip3 install --no-cache-dir --upgrade pip \
++    && pip3 install --no-cache-dir uv
+ 
+ WORKDIR /app
+ 
+@@ -18,7 +31,7 @@ COPY backend/pyproject.toml backend/uv.lock ./backend/
+ # σ«ëΦúàΣ╛¥Φ╡û∩╝êNode + Python∩╝ë
+ RUN npm ci \
+   && npm ci --prefix frontend \
+-  && cd backend && uv sync --frozen
++  && cd backend && python -m uv sync --frozen --python 3.11
+ 
+ # σñìσê╢Θí╣τ¢«µ║Éτáü
+ COPY . .
+diff --git a/backend/.python-version b/backend/.python-version
+new file mode 100644
+index 0000000..2c07333
+--- /dev/null
++++ b/backend/.python-version
+@@ -0,0 +1 @@
++3.11
+diff --git a/backend/app/services/simulation_runner.py b/backend/app/services/simulation_runner.py
+index 6509694..aa1260b 100644
+--- a/backend/app/services/simulation_runner.py
++++ b/backend/app/services/simulation_runner.py
+@@ -532,8 +532,9 @@ class SimulationRunner:
+                     if os.path.exists(main_log_path):
+                         with open(main_log_path, 'r', encoding='utf-8') as f:
+                             error_info = f.read()[-2000:]  # σÅûµ£ÇσÉÄ2000σ¡ùτ¼ª
+-                except Exception:
+-                    pass
++                except Exception as log_err:
++                    import traceback
++                    logger.error(f"Failed to read main log path: {main_log_path}, error: {traceback.format_exc()}")
+                 state.error = f"Φ┐¢τ¿ïΘÇÇσç║τáü: {exit_code}, ΘöÖΦ»»: {error_info}"
+                 logger.error(f"µ¿íµïƒσñ▒Φ┤Ñ: {simulation_id}, error={state.error}")
+             
+@@ -565,14 +566,16 @@ class SimulationRunner:
+             if simulation_id in cls._stdout_files:
+                 try:
+                     cls._stdout_files[simulation_id].close()
+-                except Exception:
+-                    pass
++                except Exception as close_err:
++                    import traceback
++                    logger.error(f"Failed to close stdout for {simulation_id}: {traceback.format_exc()}")
+                 cls._stdout_files.pop(simulation_id, None)
+             if simulation_id in cls._stderr_files and cls._stderr_files[simulation_id]:
+                 try:
+                     cls._stderr_files[simulation_id].close()
+-                except Exception:
+-                    pass
++                except Exception as close_err:
++                    import traceback
++                    logger.error(f"Failed to close stderr for {simulation_id}: {traceback.format_exc()}")
+                 cls._stderr_files.pop(simulation_id, None)
+     
+     @classmethod
+@@ -678,8 +681,9 @@ class SimulationRunner:
+                             if graph_updater:
+                                 graph_updater.add_activity_from_dict(action_data, platform)
+                             
+-                        except json.JSONDecodeError:
+-                            pass
++                        except json.JSONDecodeError as decode_err:
++                            import traceback
++                            logger.error(f"JSON decode error reading action log {log_path}: {traceback.format_exc()}")
+                 return f.tell()
+         except Exception as e:
+             logger.warning(f"Φ»╗σÅûσè¿Σ╜£µùÑσ┐ùσñ▒Φ┤Ñ: {log_path}, error={e}")
+@@ -788,14 +792,16 @@ class SimulationRunner:
+                 cls._terminate_process(process, simulation_id)
+             except ProcessLookupError:
+                 # Φ┐¢τ¿ïσ╖▓τ╗ÅΣ╕ìσ¡ÿσ£¿
+-                pass
++                logger.info(f"Process {simulation_id} already terminated (ProcessLookupError).")
+             except Exception as e:
+                 logger.error(f"τ╗êµ¡óΦ┐¢τ¿ïτ╗äσñ▒Φ┤Ñ: {simulation_id}, error={e}")
+                 # σ¢₧ΘÇÇσê░τ¢┤µÄÑτ╗êµ¡óΦ┐¢τ¿ï
+                 try:
+                     process.terminate()
+                     process.wait(timeout=5)
+-                except Exception:
++                except Exception as term_err:
++                    import traceback
++                    logger.error(f"Failed to terminate process {simulation_id}: {traceback.format_exc()}, forcing kill")
+                     process.kill()
+         
+         state.runner_status = RunnerStatus.STOPPED
+diff --git a/backend/app/services/zep_entity_reader.py b/backend/app/services/zep_entity_reader.py
+index 305ebab..9315d05 100644
+--- a/backend/app/services/zep_entity_reader.py
++++ b/backend/app/services/zep_entity_reader.py
+@@ -175,35 +175,31 @@ class ZepEntityReader:
+         logger.info(f"σà▒ΦÄ╖σÅû {len(edges_data)} µ¥íΦ╛╣")
+         return edges_data
+     
+-    def get_node_edges(self, node_uuid: str) -> List[Dict[str, Any]]:
++    def get_node_edges(self, graph_id: str, node_uuid: str) -> List[Dict[str, Any]]:
+         """
+-        ΦÄ╖σÅûµîçσ«ÜΦèéτé╣τÜäµëÇµ£ëτ¢╕σà│Φ╛╣∩╝êσ╕ªΘçìΦ»òµ£║σê╢∩╝ë
++        ΦÄ╖σÅûµîçσ«ÜΦèéτé╣τÜäµëÇµ£ëτ¢╕σà│Φ╛╣
++        
++        ΘÇÜΦ┐çΦÄ╖σÅûσ¢╛Φ░▒µëÇµ£ëΦ╛╣∩╝îτä╢σÉÄΦ┐çµ╗ñσç║Σ╕Äµîçσ«ÜΦèéτé╣τ¢╕σà│τÜäΦ╛╣
+         
+         Args:
++            graph_id: σ¢╛Φ░▒ID
+             node_uuid: Φèéτé╣UUID
+             
+         Returns:
+             Φ╛╣σêùΦí¿
+         """
+         try:
+-            # Σ╜┐τö¿ΘçìΦ»òµ£║σê╢Φ░âτö¿Zep API
+-            edges = self._call_with_retry(
+-                func=lambda: self.client.graph.node.get_entity_edges(node_uuid=node_uuid),
+-                operation_name=f"ΦÄ╖σÅûΦèéτé╣Φ╛╣(node={node_uuid[:8]}...)"
+-            )
++            # ΦÄ╖σÅûσ¢╛Φ░▒µëÇµ£ëΦ╛╣∩╝îτä╢σÉÄΦ┐çµ╗ñ
++            all_edges = self.get_all_edges(graph_id)
+             
+-            edges_data = []
+-            for edge in edges:
+-                edges_data.append({
+-                    "uuid": getattr(edge, 'uuid_', None) or getattr(edge, 'uuid', ''),
+-                    "name": edge.name or "",
+-                    "fact": edge.fact or "",
+-                    "source_node_uuid": edge.source_node_uuid,
+-                    "target_node_uuid": edge.target_node_uuid,
+-                    "attributes": edge.attributes or {},
+-                })
++            result = []
++            for edge in all_edges:
++                # µúÇµƒÑΦ╛╣µÿ»σÉªΣ╕Äµîçσ«ÜΦèéτé╣τ¢╕σà│∩╝êΣ╜£Σ╕║µ║Éµêûτ¢«µáç∩╝ë
++                if edge.get("source_node_uuid") == node_uuid or edge.get("target_node_uuid") == node_uuid:
++                    result.append(edge)
+             
+-            return edges_data
++            logger.info(f"µë╛σê░ {len(result)} µ¥íΣ╕ÄΦèéτé╣τ¢╕σà│τÜäΦ╛╣")
++            return result
+         except Exception as e:
+             logger.warning(f"ΦÄ╖σÅûΦèéτé╣ {node_uuid} τÜäΦ╛╣σñ▒Φ┤Ñ: {str(e)}")
+             return []
+@@ -285,7 +281,11 @@ class ZepEntityReader:
+                 )
+                 entities.append(node)
+                 
+-            logger.info(f"µ£¼σ£░Φºúµ₧Éσ«îµêÉ: µë╛σê░ {len(entities)} Σ╕¬σ«₧Σ╜ô")
++            logger.info(f"µ£¼σ£░Φºúµ₧Éσ«îµêÉ: µë╛σê░ {len(entities)} Σ╕¬σ«₧Σ╜ô, µê¬µû¡Φç│150Σ╕¬")
++            
++            # Enforce strict 150 agent limit for the simulation
++            entities = entities[:150]
++            
+             return FilteredEntities(
+                 entities=entities,
+                 entity_types=entity_types,
+@@ -448,7 +448,7 @@ class ZepEntityReader:
+                 return None
+             
+             # ΦÄ╖σÅûΦèéτé╣τÜäΦ╛╣
+-            edges = self.get_node_edges(entity_uuid)
++            edges = self.get_node_edges(graph_id, entity_uuid)
+             
+             # ΦÄ╖σÅûµëÇµ£ëΦèéτé╣τö¿Σ║Äσà│ΦüöµƒÑµë╛
+             all_nodes = self.get_all_nodes(graph_id)
+diff --git a/backend/app/utils/file_parser.py b/backend/app/utils/file_parser.py
+index 3f1d8ed..5a4c1b5 100644
+--- a/backend/app/utils/file_parser.py
++++ b/backend/app/utils/file_parser.py
+@@ -6,6 +6,9 @@
+ import os
+ from pathlib import Path
+ from typing import List, Optional
++from .logger import get_logger
++
++logger = get_logger("mirofish.file_parser")
+ 
+ 
+ def _read_text_with_fallback(file_path: str) -> str:
+@@ -29,8 +32,8 @@ def _read_text_with_fallback(file_path: str) -> str:
+     # Θªûσàêσ░¥Φ»ò UTF-8
+     try:
+         return data.decode('utf-8')
+-    except UnicodeDecodeError:
+-        pass
++    except UnicodeDecodeError as e:
++        logger.debug(f"Failed to decode {file_path} as utf-8: {e}")
+     
+     # σ░¥Φ»òΣ╜┐τö¿ charset_normalizer µúÇµ╡ïτ╝ûτáü
+     encoding = None
+@@ -39,8 +42,8 @@ def _read_text_with_fallback(file_path: str) -> str:
+         best = from_bytes(data).best()
+         if best and best.encoding:
+             encoding = best.encoding
+-    except Exception:
+-        pass
++    except Exception as e:
++        logger.debug(f"charset_normalizer detection failed for {file_path}: {e}")
+     
+     # σ¢₧ΘÇÇσê░ chardet
+     if not encoding:
+@@ -48,8 +51,8 @@ def _read_text_with_fallback(file_path: str) -> str:
+             import chardet
+             result = chardet.detect(data)
+             encoding = result.get('encoding') if result else None
+-        except Exception:
+-            pass
++        except Exception as e:
++            logger.debug(f"chardet detection failed for {file_path}: {e}")
+     
+     # µ£Çτ╗êσà£σ║ò∩╝ÜΣ╜┐τö¿ UTF-8 + replace
+     if not encoding:
+diff --git a/backend/app/utils/zep_client_factory.py b/backend/app/utils/zep_client_factory.py
+index e9e7a23..1defbfe 100644
+--- a/backend/app/utils/zep_client_factory.py
++++ b/backend/app/utils/zep_client_factory.py
+@@ -3,7 +3,7 @@
+ """
+ 
+ from typing import Optional
+-from zep_python import Zep
++from zep_cloud.client import Zep
+ from ..config import Config
+ 
+ def get_zep_client(api_key: Optional[str] = None) -> Zep:
+diff --git a/docker-compose-zep.yml b/docker-compose-zep.yml
+index 6e16a43..a25c52c 100644
+--- a/docker-compose-zep.yml
++++ b/docker-compose-zep.yml
+@@ -2,19 +2,22 @@ version: '3.8'
+ 
+ services:
+   zep:
+-    image: getzep/zep:latest
++    image: ghcr.io/getzep/zep:latest
+     container_name: zep-server
+     ports:
+       - "8000:8000"
+     volumes:
+       - ./config-zep.yaml:/app/config.yaml
++    environment:
++      - ZEP_OPENAI_API_KEY=local_dummy_not_used
+     command: ["--config", "/app/config.yaml"]
+     depends_on:
+       db:
+         condition: service_healthy
+-
++    networks:
++      - common_net
+   db:
+-    image: postgres:15
++    image: pgvector/pgvector:pg15
+     container_name: zep-db
+     ports:
+       - "5432:5432"
+@@ -29,6 +32,11 @@ services:
+       retries: 5
+     volumes:
+       - zep_db_data:/var/lib/postgresql/data
++    networks:
++      - common_net
++
++networks:
++  common_net:
+ 
+ volumes:
+   zep_db_data:
+diff --git a/docker-compose.yml b/docker-compose.yml
+index 32ecc51..e4f5ff6 100644
+--- a/docker-compose.yml
++++ b/docker-compose.yml
+@@ -1,14 +1,25 @@
+ services:
+   mirofish:
+-    image: ghcr.io/666ghj/mirofish:latest
++    build: .
++    image: mirofish:local
+     container_name: mirofish
+     tty: true
+     stdin_open: true
+     env_file:
+       - .env
+     ports:
+-      - "3000:3000"
++      - "3001:3000"
+       - "5001:5001"
+     restart: unless-stopped
+     volumes:
+       - ./backend/uploads:/app/backend/uploads
++    deploy:
++      resources:
++        limits:
++          memory: 4G
++    command: npm run backend
++    networks:
++      - common_net
++
++networks:
++  common_net:
+diff --git a/domain/vu_physics/scripts/run_scenarios.py b/domain/vu_physics/scripts/run_scenarios.py
+index 30ec1c2..d4ce3c9 100644
+--- a/domain/vu_physics/scripts/run_scenarios.py
++++ b/domain/vu_physics/scripts/run_scenarios.py
+@@ -150,8 +150,32 @@ def main():
+     else:
+         print("Γ¥î Scenario A failed.")
+ 
+-    print("\n--- SCENARIO B & C ARE TEMPORARILY DISABLED FOR TESTING ---")
+-    print("Run analyze_results.py once Scenario A completes.")
++    # Run Scenario B
++    sim_b = run_scenario(
++        "Scenario B (The Exclusive Drop)",
++        "Γé¼7.99/mo, no trial. Waitlist only. 'Used by Top 1% of VU Students'. Target: FOMO-driven students who want to feel elite.",
++        "Scenario B",
++        rounds=rounds
++    )
++    if sim_b:
++        print(f"Simulation B ID: {sim_b}")
++    else:
++        print("Γ¥î Scenario B failed.")
++
++    # Run Scenario C
++    sim_c = run_scenario(
++        "Scenario C (The Peer Pressure Nudge)",
++        "Freemium model. Basic features free, but you see exactly who in your group has Premium. Target: Socially anxious students who don't want to fall behind their friends.",
++        "Scenario C",
++        rounds=rounds
++    )
++    if sim_c:
++        print(f"Simulation C ID: {sim_c}")
++    else:
++        print("Γ¥î Scenario C failed.")
++
++    print("\n--- ALL SCENARIOS COMPLETED ---")
++    print("Run analyze_results.py to compare the simulations.")
+ 
+ if __name__ == "__main__":
+     main()
+diff --git a/domain/vu_physics/scripts/test_run_scenarios.py b/domain/vu_physics/scripts/test_run_scenarios.py
+new file mode 100644
+index 0000000..2a64bd2
+--- /dev/null
++++ b/domain/vu_physics/scripts/test_run_scenarios.py
+@@ -0,0 +1,46 @@
++import os
++import sys
++import pytest
++from unittest.mock import patch, MagicMock
++
++# Add the script dir to sys path so we can import it
++SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
++sys.path.insert(0, SCRIPT_DIR)
++
++import run_scenarios
++
++def test_scenario_prompts_are_correctly_formed():
++    """Test that run_scenario constructs the expected simulation_requirement for A, B, and C."""
++    with patch('requests.post') as mock_post, patch('requests.get') as mock_get:
++        # Mock responses to short-circuit the function
++        mock_response = MagicMock()
++        mock_response.status_code = 500
++        mock_post.return_value = mock_response
++        
++        # Test Scenario A
++        run_scenarios.run_scenario("Scenario A", "Strategy A", "Keyword A", 2)
++        
++        # Look at the first post call (Ontology generation)
++        call_args = mock_post.call_args_list[0][1]
++        data = call_args['data']
++        assert "This is Scenario A." in data['simulation_requirement']
++        assert "MARKETING STRATEGY: Strategy A." in data['simulation_requirement']
++        assert "(Keyword A)" in data['simulation_requirement']
++
++        # Test Scenario B
++        mock_post.reset_mock()
++        run_scenarios.run_scenario("Scenario B", "Strategy B", "Keyword B", 2)
++        call_args = mock_post.call_args_list[0][1]
++        data = call_args['data']
++        assert "This is Scenario B." in data['simulation_requirement']
++        assert "MARKETING STRATEGY: Strategy B." in data['simulation_requirement']
++        assert "(Keyword B)" in data['simulation_requirement']
++
++        # Test Scenario C
++        mock_post.reset_mock()
++        run_scenarios.run_scenario("Scenario C", "Strategy C", "Keyword C", 2)
++        call_args = mock_post.call_args_list[0][1]
++        data = call_args['data']
++        assert "This is Scenario C." in data['simulation_requirement']
++        assert "MARKETING STRATEGY: Strategy C." in data['simulation_requirement']
++        assert "(Keyword C)" in data['simulation_requirement']
+diff --git a/miro_verify.txt b/miro_verify.txt
+new file mode 100644
+index 0000000..0e5f175
+--- /dev/null
++++ b/miro_verify.txt
+@@ -0,0 +1,39 @@
++
++> mirofish@0.1.0 backend
++> cd backend && uv run python run.py
++
++[37mΓáï[0m [2mPreparing packages...[0m (0/0)                                                   
+[2K[37mΓáï[0m [2mPreparing packages...[0m (0/1)                                                   
+[2K[37mΓáÖ[0m [2mPreparing packages...[0m (0/1)                                                   
+[2K   [36m[1mBuilding[0m[39m mirofish-backend[2m @ file:///app/backend[0m
++[37mΓáÖ[0m [2mPreparing packages...[0m (0/1)                                                   [1A
+[2K[1B
+[2K[1A   [36m[1mBuilding[0m[39m mirofish-backend[2m @ file:///app/backend[0m
++[37mΓá╣[0m [2mPreparing packages...[0m (0/1)                                                   [1A
+[2K[1B
+[2K[1A   [36m[1mBuilding[0m[39m mirofish-backend[2m @ file:///app/backend[0m
++[37mΓá╕[0m [2mPreparing packages...[0m (0/1)                                                   [1A
+[2K[1B
+[2K[1A   [36m[1mBuilding[0m[39m mirofish-backend[2m @ file:///app/backend[0m
++[37mΓá╝[0m [2mPreparing packages...[0m (0/1)                                                   [1A
+[2K[1B
+[2K[1A   [36m[1mBuilding[0m[39m mirofish-backend[2m @ file:///app/backend[0m
++[37mΓá┤[0m [2mPreparing packages...[0m (0/1)                                                   [1A
+[2K[1B
+[2K[1A   [36m[1mBuilding[0m[39m mirofish-backend[2m @ file:///app/backend[0m
++[37mΓáª[0m [2mPreparing packages...[0m (0/1)                                                   [1A
+[2K[1B
+[2K[1A   [36m[1mBuilding[0m[39m mirofish-backend[2m @ file:///app/backend[0m
++[37mΓáº[0m [2mPreparing packages...[0m (0/1)                                                   [1A
+[2K[1B
+[2K[1A   [36m[1mBuilding[0m[39m mirofish-backend[2m @ file:///app/backend[0m
++[37mΓáç[0m [2mPreparing packages...[0m (0/1)                                                   [1A
+[2K[1B
+[2K[1A      [32m[1mBuilt[0m[39m mirofish-backend[2m @ file:///app/backend[0m
++[37mΓáç[0m [2mPreparing packages...[0m (0/1)                                                   
+[2K[37mΓáç[0m [2m[0m (1/1)                                                                        
+[2K[2mUninstalled [1m1 package[0m [2min 1ms[0m[0m
++ΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæ [0/0] [2mInstalling wheels...                                 [0m
+[2KΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæ [0/1] [2mInstalling wheels...                                 [0m
+[2KΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæΓûæ [0/1] [2mmirofish-backend==0.1.0 (from file:///app/backend)   [0m
+[2KΓûêΓûêΓûêΓûêΓûêΓûêΓûêΓûêΓûêΓûêΓûêΓûêΓûêΓûêΓûêΓûêΓûêΓûêΓûêΓûê [1/1] [2mmirofish-backend==0.1.0 (from file:///app/backend)   [0m
+[2K[2mInstalled [1m1 package[0m [2min 1ms[0m[0m
++
++> mirofish@0.1.0 backend
++> cd backend && uv run python run.py
++
++
++> mirofish@0.1.0 backend
++> cd backend && uv run python run.py
++
++
++> mirofish@0.1.0 backend
++> cd backend && uv run python run.py
++
++
++> mirofish@0.1.0 backend
++> cd backend && uv run python run.py
++
++
++> mirofish@0.1.0 backend
++> cd backend && uv run python run.py
++
++
++> mirofish@0.1.0 backend
++> cd backend && uv run python run.py
++
+diff --git a/package.json b/package.json
+index 63ace21..d867d3a 100644
+--- a/package.json
++++ b/package.json
+@@ -4,10 +4,10 @@
+   "description": "MiroFish - τ«Çµ┤üΘÇÜτö¿τÜäτ╛ñΣ╜ôµÖ║Φâ╜σ╝òµôÄ∩╝îΘóäµ╡ïΣ╕çτë⌐",
+   "scripts": {
+     "setup": "npm install && cd frontend && npm install",
+-    "setup:backend": "cd backend && uv sync",
++    "setup:backend": "cd backend && python -m uv sync",
+     "setup:all": "npm run setup && npm run setup:backend",
+     "dev": "concurrently --kill-others -n \"backend,frontend\" -c \"green,cyan\" \"npm run backend\" \"npm run frontend\"",
+-    "backend": "cd backend && uv run python run.py",
++    "backend": "cd backend && python -m uv run python run.py",
+     "frontend": "cd frontend && npm run dev",
+     "build": "cd frontend && npm run build"
+   },
+diff --git a/zep_verify.txt b/zep_verify.txt
+new file mode 100644
+index 0000000..9811317
+--- /dev/null
++++ b/zep_verify.txt
+@@ -0,0 +1,22 @@
++time="2026-03-21T23:38:22Z" level=warning msg=".env file not found or unable to load. This warning can be ignored if Zep is run using docker compose with env_file defined or you are passing ENV variables."
++time="2026-03-21T23:38:22Z" level=info msg="Log level set to: info"
++time="2026-03-21T23:38:22Z" level=info msg="Starting Zep server version 0.27.2-12a69d7 (2024-09-11T15:10:39+0000)"
++time="2026-03-21T23:38:25Z" level=info msg="vector extension version is >= 0.5.0. hnsw indexing available"
++time="2026-03-21T23:38:25Z" level=info msg="migrated to group #1 (20230822100800_add_user_uuid_to_session_schema, 2023092800_add_index_type_to_collection_schema, 2023110100_add_missing_embedding_column)\n"
++time="2026-03-21T23:38:25Z" level=warning msg="message embedding dimensions are 1536, expected 0.\n migrating message embedding column width to 0. this may result in loss of existing embedding vectors"
++time="2026-03-21T23:38:25Z" level=warning msg="summary embedding dimensions are 1536, expected 0.\n migrating summary embedding column width to 0. this may result in loss of existing embedding vectors"
++time="2026-03-21T23:38:25Z" level=info msg="creating hnsw index on message_embedding.embedding if it does not exist"
++time="2026-03-21T23:38:25Z" level=info msg="created hnsw index successfully on message_embedding.embedding if it did not exist"
++time="2026-03-21T23:38:25Z" level=info msg="creating hnsw index on summary_embedding.embedding if it does not exist"
++time="2026-03-21T23:38:25Z" level=info msg="created hnsw index successfully on summary_embedding.embedding if it did not exist"
++time="2026-03-21T23:38:25Z" level=info msg="Using memory store: postgres"
++time="2026-03-21T23:38:25Z" level=info msg="Initializing tasks"
++time="2026-03-21T23:38:25Z" level=info msg="Adding handler" handler_name=message_token_count topic=message_token_count
++time="2026-03-21T23:38:25Z" level=info msg="message_token_count task added to task router"
++time="2026-03-21T23:38:25Z" level=info msg="running task router"
++time="2026-03-21T23:38:25Z" level=info msg="Running router handlers" count=1
++time="2026-03-21T23:38:25Z" level=info msg="Initializing subscriber schema" query="[ \n\t\tCREATE TABLE IF NOT EXISTS \"watermill_message_token_count\" (\n\t\t\t\"offset\" SERIAL,\n\t\t\t\"uuid\" VARCHAR(36) NOT NULL,\n\t\t\t\"created_at\" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,\n\t\t\t\"payload\" JSON DEFAULT NULL,\n\t\t\t\"metadata\" JSON DEFAULT NULL,\n\t\t\t\"transaction_id\" xid8 NOT NULL,\n\t\t\tPRIMARY KEY (\"transaction_id\", \"offset\")\n\t\t);\n\t \n\t\tCREATE TABLE IF NOT EXISTS \"watermill_offsets_message_token_count\" (\n\t\tconsumer_group VARCHAR(255) NOT NULL,\n\t\toffset_acked BIGINT,\n\t\tlast_processed_transaction_id xid8 NOT NULL,\n\t\tPRIMARY KEY(consumer_group)\n\t)]" subscriber_id=01KM9C79PZVYHT90MVX1DFH163
++time="2026-03-21T23:38:25Z" level=info msg="Web interface enabled"
++time="2026-03-21T23:38:25Z" level=info msg="Listening on: 0.0.0.0:8000"
++time="2026-03-21T23:38:25Z" level=info msg="Web UI available at: 0.0.0.0:8000/admin"
++time="2026-03-21T23:38:25Z" level=info msg="Starting handler" subscriber_name=message_token_count topic=message_token_count

@@ -1,29 +1,46 @@
-FROM python:3.11
+# Build Frontend
+FROM --platform=linux/amd64 node:20-slim AS frontend-builder
+WORKDIR /app/frontend
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+COPY frontend/ ./
+RUN npm run build
 
-# 安装 Node.js （满足 >=18）及必要工具
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends nodejs npm \
-  && rm -rf /var/lib/apt/lists/*
-
-# 从 uv 官方镜像复制 uv
-COPY --from=ghcr.io/astral-sh/uv:0.9.26 /uv /uvx /bin/
-
+# Runtime Stage
+FROM --platform=linux/amd64 python:3.11-slim
 WORKDIR /app
 
-# 先复制依赖描述文件以利用缓存
-COPY package.json package-lock.json ./
-COPY frontend/package.json frontend/package-lock.json ./frontend/
+# Install system dependencies (Node is needed for npm run backend)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    ca-certificates \
+    nodejs \
+    npm \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install uv
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.local/bin:${PATH}"
+
+# Copy backend dependency files only (to protect cache)
 COPY backend/pyproject.toml backend/uv.lock ./backend/
 
-# 安装依赖（Node + Python）
-RUN npm ci \
-  && npm ci --prefix frontend \
-  && cd backend && uv sync --frozen
+# Install Backend dependencies (large AI libraries)
+RUN cd backend && uv sync --frozen
 
-# 复制项目源码
+# Copy root package files (scripts for running the app)
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+
+# Copy source code
 COPY . .
+
+# Copy built frontend from stage 1
+COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
+
+# Ensure uploads and logs directories exist
+RUN mkdir -p backend/uploads backend/logs
 
 EXPOSE 3000 5001
 
-# 同时启动前后端（开发模式）
-CMD ["npm", "run", "dev"]
+CMD ["npm", "run", "backend"]

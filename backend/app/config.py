@@ -6,14 +6,24 @@
 import os
 from dotenv import load_dotenv
 
-# 加载项目根目录的 .env 文件
-# 路径: MiroFish/.env (相对于 backend/app/config.py)
-project_root_env = os.path.join(os.path.dirname(__file__), '../../.env')
+# 寻找 .env 文件
+# 1. 检查 backend/ 根目录
+# 2. 检查项目根目录 (MiroFish/.env)
+potential_env_paths = [
+    os.path.join(os.path.dirname(__file__), '../.env'),
+    os.path.join(os.path.dirname(__file__), '../../.env'),
+    os.path.join(os.getcwd(), '.env'),
+]
 
-if os.path.exists(project_root_env):
-    load_dotenv(project_root_env, override=True)
-else:
-    # 如果根目录没有 .env，尝试加载环境变量（用于生产环境）
+env_found = False
+for env_path in potential_env_paths:
+    if os.path.exists(env_path):
+        load_dotenv(env_path, override=True)
+        env_found = True
+        break
+
+if not env_found:
+    # 如果没找到物理文件，尝试加载环境变量（容器环境直接注入的情况）
     load_dotenv(override=True)
 
 

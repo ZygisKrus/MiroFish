@@ -2,19 +2,22 @@ version: '3.8'
 
 services:
   zep:
-    image: getzep/zep:latest
+    image: ghcr.io/getzep/zep:latest
     container_name: zep-server
     ports:
       - "8000:8000"
     volumes:
       - ./config-zep.yaml:/app/config.yaml
+    environment:
+      - ZEP_OPENAI_API_KEY=local_dummy_not_used
     command: ["--config", "/app/config.yaml"]
     depends_on:
       db:
         condition: service_healthy
-
+    networks:
+      - common_net
   db:
-    image: postgres:15
+    image: pgvector/pgvector:pg15
     container_name: zep-db
     ports:
       - "5432:5432"
@@ -29,6 +32,11 @@ services:
       retries: 5
     volumes:
       - zep_db_data:/var/lib/postgresql/data
+    networks:
+      - common_net
+
+networks:
+  common_net:
 
 volumes:
   zep_db_data:

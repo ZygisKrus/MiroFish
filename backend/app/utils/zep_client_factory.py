@@ -3,7 +3,7 @@
 """
 
 from typing import Optional
-from zep_python import Zep
+from zep_cloud.client import Zep
 from ..config import Config
 
 def get_zep_client(api_key: Optional[str] = None) -> Zep:

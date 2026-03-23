@@ -150,8 +150,32 @@ def main():
     else:
         print("❌ Scenario A failed.")
 
-    print("\n--- SCENARIO B & C ARE TEMPORARILY DISABLED FOR TESTING ---")
-    print("Run analyze_results.py once Scenario A completes.")
+    # Run Scenario B
+    sim_b = run_scenario(
+        "Scenario B (The Exclusive Drop)",
+        "€7.99/mo, no trial. Waitlist only. 'Used by Top 1% of VU Students'. Target: FOMO-driven students who want to feel elite.",
+        "Scenario B",
+        rounds=rounds
+    )
+    if sim_b:
+        print(f"Simulation B ID: {sim_b}")
+    else:
+        print("❌ Scenario B failed.")
+
+    # Run Scenario C
+    sim_c = run_scenario(
+        "Scenario C (The Peer Pressure Nudge)",
+        "Freemium model. Basic features free, but you see exactly who in your group has Premium. Target: Socially anxious students who don't want to fall behind their friends.",
+        "Scenario C",
+        rounds=rounds
+    )
+    if sim_c:
+        print(f"Simulation C ID: {sim_c}")
+    else:
+        print("❌ Scenario C failed.")
+
+    print("\n--- ALL SCENARIOS COMPLETED ---")
+    print("Run analyze_results.py to compare the simulations.")
 
 if __name__ == "__main__":
     main()

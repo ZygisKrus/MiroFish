@@ -532,8 +532,9 @@ class SimulationRunner:
                     if os.path.exists(main_log_path):
                         with open(main_log_path, 'r', encoding='utf-8') as f:
                             error_info = f.read()[-2000:]  # 取最后2000字符
-                except Exception:
-                    pass
+                except Exception as log_err:
+                    import traceback
+                    logger.error(f"Failed to read main log path: {main_log_path}, error: {traceback.format_exc()}")
                 state.error = f"进程退出码: {exit_code}, 错误: {error_info}"
                 logger.error(f"模拟失败: {simulation_id}, error={state.error}")
             
@@ -565,14 +566,16 @@ class SimulationRunner:
             if simulation_id in cls._stdout_files:
                 try:
                     cls._stdout_files[simulation_id].close()
-                except Exception:
-                    pass
+                except Exception as close_err:
+                    import traceback
+                    logger.error(f"Failed to close stdout for {simulation_id}: {traceback.format_exc()}")
                 cls._stdout_files.pop(simulation_id, None)
             if simulation_id in cls._stderr_files and cls._stderr_files[simulation_id]:
                 try:
                     cls._stderr_files[simulation_id].close()
-                except Exception:
-                    pass
+                except Exception as close_err:
+                    import traceback
+                    logger.error(f"Failed to close stderr for {simulation_id}: {traceback.format_exc()}")
                 cls._stderr_files.pop(simulation_id, None)
     
     @classmethod
@@ -678,8 +681,9 @@ class SimulationRunner:
                             if graph_updater:
                                 graph_updater.add_activity_from_dict(action_data, platform)
                             
-                        except json.JSONDecodeError:
-                            pass
+                        except json.JSONDecodeError as decode_err:
+                            import traceback
+                            logger.error(f"JSON decode error reading action log {log_path}: {traceback.format_exc()}")
                 return f.tell()
         except Exception as e:
             logger.warning(f"读取动作日志失败: {log_path}, error={e}")
@@ -788,14 +792,16 @@ class SimulationRunner:
                 cls._terminate_process(process, simulation_id)
             except ProcessLookupError:
                 # 进程已经不存在
-                pass
+                logger.info(f"Process {simulation_id} already terminated (ProcessLookupError).")
             except Exception as e:
                 logger.error(f"终止进程组失败: {simulation_id}, error={e}")
                 # 回退到直接终止进程
                 try:
                     process.terminate()
                     process.wait(timeout=5)
-                except Exception:
+                except Exception as term_err:
+                    import traceback
+                    logger.error(f"Failed to terminate process {simulation_id}: {traceback.format_exc()}, forcing kill")
                     process.kill()
         
         state.runner_status = RunnerStatus.STOPPED
