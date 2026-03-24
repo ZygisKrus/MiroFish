@@ -6,13 +6,17 @@ LaTeX 数学公式转 SVG 渲染器
 import io
 import re
 from typing import Optional
-import matplotlib
-import matplotlib.pyplot as plt
-from matplotlib import mathtext
 from loguru import logger
 
-# 使用非交互式后端
-matplotlib.use('Agg')
+try:
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    from matplotlib import mathtext
+    MATPLOTLIB_AVAILABLE = True
+except ImportError:
+    MATPLOTLIB_AVAILABLE = False
+    logger.warning("Matplotlib未安装，LaTeX数学公式SVG渲染功能将不可用")
 
 
 class MathToSVG:
@@ -40,6 +44,9 @@ class MathToSVG:
         Returns:
             SVG 字符串，如果转换失败则返回 None
         """
+        if not MATPLOTLIB_AVAILABLE:
+            logger.warning("Matplotlib未安装，无法渲染LaTeX公式")
+            return None
         try:
             # 清理 LaTeX 字符串，去除外层定界符，兼容 $...$ / $$...$$ / \\( \\) / \\[ \\]
             latex = (latex or "").strip()
