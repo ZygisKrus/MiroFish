@@ -10,13 +10,14 @@ RUN npm run build
 FROM --platform=linux/amd64 python:3.11-slim
 WORKDIR /app
 
-# Install system dependencies (Node is needed for npm run backend)
+# Install system dependencies (Node is needed for npm run backend and serve)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
     nodejs \
     npm \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && npm install -g serve
 
 # Install uv
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -43,4 +44,7 @@ RUN mkdir -p backend/uploads backend/logs
 
 EXPOSE 3000 5001
 
-CMD ["npm", "run", "backend"]
+# Start script: serve frontend on 3000, run Flask backend on 5001
+COPY start.sh /app/start.sh
+RUN chmod +x /app/start.sh
+CMD ["/app/start.sh"]
