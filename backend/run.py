@@ -6,7 +6,14 @@ import os
 import sys
 import signal
 import atexit
+
+print("[Startup] MiroFish Backend process starting...", flush=True)
+print(f"[Startup] Python {sys.version}", flush=True)
+print(f"[Startup] Platform: {sys.platform}", flush=True)
+
 import psutil
+print(f"[Startup] Memory: {psutil.virtual_memory().total / (1024**3):.1f}GB total, "
+      f"{psutil.virtual_memory().available / (1024**3):.1f}GB available", flush=True)
 
 # 解决 Windows 控制台中文乱码问题：在所有导入之前设置 UTF-8 编码
 if sys.platform == 'win32':
@@ -21,8 +28,10 @@ if sys.platform == 'win32':
 # 添加项目根目录到路径
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+print("[Startup] Importing app modules...", flush=True)
 from app import create_app
 from app.config import Config
+print("[Startup] App modules imported successfully", flush=True)
 
 
 def cleanup_child_processes():
@@ -61,6 +70,7 @@ def main():
     signal.signal(signal.SIGTERM, signal_handler)
 
     # 验证配置
+    print("[Startup] Validating configuration...", flush=True)
     errors = Config.validate()
     if errors:
         print("配置错误:")
@@ -68,9 +78,14 @@ def main():
             print(f"  - {err}")
         print("\n请检查 .env 文件中的配置")
         sys.exit(1)
-    
+    print("[Startup] Configuration valid", flush=True)
+
     # 创建应用
+    print("[Startup] Creating Flask app...", flush=True)
+    mem_before = psutil.virtual_memory().available / (1024**3)
     app = create_app()
+    mem_after = psutil.virtual_memory().available / (1024**3)
+    print(f"[Startup] Flask app created (memory used: {mem_before - mem_after:.1f}GB)", flush=True)
     
     # 获取运行配置
     host = os.environ.get('FLASK_HOST', '0.0.0.0')

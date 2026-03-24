@@ -11,14 +11,20 @@ services:
     ports:
       - "3001:3000"
       - "5001:5001"
-    restart: unless-stopped
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
     volumes:
       - ./backend/uploads:/app/backend/uploads
       - ./backend/logs:/app/backend/logs
     deploy:
       resources:
         limits:
-          memory: 4G
+          memory: 8G
     networks:
       - common_net
 
