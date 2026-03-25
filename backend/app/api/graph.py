@@ -403,12 +403,44 @@ def build_graph():
                     message="创建Zep图谱...",
                     progress=10
                 )
-                graph_id = builder.create_graph(name=graph_name)
-                
+                try:
+                    graph_id = builder.create_graph(name=graph_name)
+                except Exception as zep_err:
+                    # Zep Community Edition does not support the graph API — it returns
+                    # an HTML 404 page. Fall back to local seed file gracefully so the
+                    # simulation/prepare step can still generate agents from the seed.
+                    err_str = str(zep_err)
+                    if "404" in err_str or "status_code: 404" in err_str:
+                        build_logger.warning(
+                            f"[{task_id}] Zep graph API unavailable (CE mode) — "
+                            "falling back to local_seed_fallback"
+                        )
+                        graph_id = "local_seed_fallback"
+                        project.graph_id = graph_id
+                        project.status = ProjectStatus.GRAPH_COMPLETED
+                        ProjectManager.save_project(project)
+                        task_manager.update_task(
+                            task_id,
+                            status=TaskStatus.COMPLETED,
+                            message="Zep graph API not available (self-hosted CE). "
+                                    "Agent generation will use local seed file.",
+                            progress=100,
+                            result={
+                                "project_id": project_id,
+                                "graph_id": graph_id,
+                                "node_count": 0,
+                                "edge_count": 0,
+                                "chunk_count": 0,
+                                "mode": "local_seed_fallback",
+                            },
+                        )
+                        return
+                    raise
+
                 # 更新项目的graph_id
                 project.graph_id = graph_id
                 ProjectManager.save_project(project)
-                
+
                 # 设置本体
                 task_manager.update_task(
                     task_id,
