@@ -5,9 +5,10 @@ LLM客户端封装
 
 import json
 import re
+import time
 from typing import Optional, Dict, Any, List
-from openai import OpenAI
-from tenacity import retry, wait_exponential, stop_after_attempt, retry_if_exception_type
+from openai import OpenAI, RateLimitError
+from tenacity import retry, wait_exponential, stop_after_attempt, retry_if_exception_type, retry_if_not_exception_type
 
 from ..config import Config
 
@@ -36,7 +37,7 @@ class LLMClient:
     @retry(
         wait=wait_exponential(multiplier=1, min=4, max=60),
         stop=stop_after_attempt(5),
-        retry=retry_if_exception_type(Exception),
+        retry=retry_if_not_exception_type(RateLimitError),  # Don't burn RPM quota on 429s
         reraise=True
     )
     def _create_completion_with_retry(self, **kwargs):
@@ -127,6 +128,14 @@ class LLMClient:
                 # 稍微调整温度以获得不同的输出
                 temperature = min(1.0, temperature + 0.1)
                 time.sleep(1)
+            except RateLimitError as e:
+                last_error = e
+                # Parse suggested retry delay from error message if available (e.g. Google: "retry in 11.5s")
+                import re as _re
+                _delay_match = _re.search(r'retry in (\d+\.?\d*)s', str(e), _re.IGNORECASE)
+                _wait = float(_delay_match.group(1)) + 3 if _delay_match else 30
+                print(f"[LLM Client] Rate limit (429) on attempt {attempt + 1}, waiting {_wait:.0f}s for reset...")
+                time.sleep(_wait)
             except Exception as e:
                 last_error = e
                 print(f"[LLM Client] API Error on attempt {attempt + 1}: {e}")
