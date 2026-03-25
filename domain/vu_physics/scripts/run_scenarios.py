@@ -54,9 +54,41 @@ def run_scenario(scenario_name, marketing_strategy, requirement_keyword, rounds=
     project_id = res_data['data']['project_id']
     print(f"SUCCESS: Project Created ID={project_id}")
 
-    # [Step 2 & 3 SKIPPED - Zep Free Plan Limit Reached]
-    print("\n[Step 2/3] Skipping Graph Build (Zep Free Plan Episode Limit Reached)")
-    graph_id = "dummy_graph_id_for_local_bypass"
+    # 2. Build Knowledge Graph (optional — falls back to local seed if Zep graph API unavailable)
+    print("\n[Step 2] Building Knowledge Graph in Zep (optional)...")
+    graph_id = "local_seed_fallback"  # Default: use local seed file if graph build fails
+
+    response = requests.post(f"{BASE_URL}/graph/build", json={"project_id": project_id})
+    if response.status_code == 200:
+        task_id = response.json()['data']['task_id']
+        print(f"Graph build task started: task_id={task_id}")
+
+        # 3. Poll until graph build completes (up to 5 minutes)
+        print("\n[Step 3] Waiting for graph build to complete...")
+        for _ in range(60):
+            r = requests.get(f"{BASE_URL}/graph/task/{task_id}")
+            task = r.json()
+            status = task.get('status', 'unknown')
+            progress = task.get('progress', 0)
+            print(f"  Graph build: {status} ({progress}%) — {task.get('message', '')}")
+            if status == 'completed':
+                built_id = task.get('result', {}).get('graph_id')
+                if built_id:
+                    graph_id = built_id
+                    node_count = task.get('result', {}).get('node_count', 0)
+                    edge_count = task.get('result', {}).get('edge_count', 0)
+                    print(f"SUCCESS: Graph built — graph_id={graph_id}, nodes={node_count}, edges={edge_count}")
+                break
+            elif status == 'failed':
+                print(f"⚠ Graph build failed ({task.get('message', '')}), using local seed fallback")
+                break
+            time.sleep(5)
+        else:
+            print("⚠ Graph build timed out, using local seed fallback")
+    else:
+        print(f"⚠ Graph build unavailable ({response.status_code}), using local seed fallback")
+
+    print(f"Using graph_id={graph_id}")
 
     # 4. Create Simulation
     print("\n[Step 4] Creating Simulation...")
