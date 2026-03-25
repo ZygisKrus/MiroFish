@@ -11,7 +11,7 @@ SEED_FILE = os.path.abspath(os.path.join(SCRIPT_DIR, "../seeds/refined_mega_seed
 
 def run_scenario(scenario_name, marketing_strategy, requirement_keyword, rounds=3):
     print(f"\n{'='*50}")
-    print(f"🚀 STARTING SCENARIO: {scenario_name}")
+    print(f">>> STARTING SCENARIO: {scenario_name}")
     print(f"{'='*50}")
 
     if not os.path.exists(SEED_FILE):
@@ -180,7 +180,7 @@ def main():
     if sim_a:
         print(f"Simulation A ID: {sim_a}")
     else:
-        print("❌ Scenario A failed.")
+        print("FAILED: Scenario A failed.")
 
     # Run Scenario B
     sim_b = run_scenario(
@@ -192,7 +192,7 @@ def main():
     if sim_b:
         print(f"Simulation B ID: {sim_b}")
     else:
-        print("❌ Scenario B failed.")
+        print("FAILED: Scenario B failed.")
 
     # Run Scenario C
     sim_c = run_scenario(
@@ -204,7 +204,7 @@ def main():
     if sim_c:
         print(f"Simulation C ID: {sim_c}")
     else:
-        print("❌ Scenario C failed.")
+        print("FAILED: Scenario C failed.")
 
     print("\n--- ALL SCENARIOS COMPLETED ---")
     print("Run analyze_results.py to compare the simulations.")
