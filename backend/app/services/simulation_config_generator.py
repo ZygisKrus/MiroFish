@@ -25,6 +25,18 @@ from .zep_entity_reader import EntityNode, ZepEntityReader
 
 logger = get_logger('mirofish.simulation_config')
 
+# Lithuanian seed posts for Fizkonspektas simulations -- injected as initial_posts
+# so agents have Lithuanian content to react to in round 1 (prevents cold-start repetition)
+VU_FIZKONSPEKTAS_SEED_POSTS = [
+    "Kas girdejote apie fizkonspektai.lt? Kokia jusu nuomone?",
+    "Sesija arteja... ar verta moketi 9.99 uz konspektus ar geriau pasidalinti?",
+    "Kamciatka kambariai visi pilni tu QR kodu. Kas tai per daiktas?",
+    "Musu studiju grupe svarsto pasidalinti vienu Fizkonspektas paskyra - ar tai legalu?",
+    "Dirbtinio intelekto asistentas fizikoje - reali pagalba ar tik rinkodaros triukas?",
+    "Pirku Fizkonspektas vieno kurso konspekta uz 5.99 - tikrai verta, ypac kvantu mechanika.",
+    "Kas bande Fizkonspektas 7 dienu nemokama proga? Ar AI asistentas gerai atsako?",
+]
+
 # Lithuanian VU Physics student activity patterns (Europe/Vilnius, UTC+2/+3)
 LITHUANIA_TIMEZONE_CONFIG = {
     # Deep sleep (almost no activity)
@@ -355,6 +367,15 @@ class SimulationConfigGenerator:
         event_config = self._assign_initial_post_agents(event_config, all_agent_configs)
         assigned_count = len([p for p in event_config.initial_posts if p.get("poster_agent_id") is not None])
         reasoning_parts.append(f"Initial posts: {assigned_count} assigned")
+
+        # ========== Inject Lithuanian seed posts for Fizkonspektas simulations ==========
+        requirement_lower = (simulation_requirement or "").lower()
+        if "fizkonspektas" in requirement_lower:
+            existing = event_config.initial_posts or []
+            seed_dicts = [{"content": text, "poster_type": "student", "poster_agent_id": None}
+                          for text in VU_FIZKONSPEKTAS_SEED_POSTS]
+            event_config.initial_posts = seed_dicts + existing
+            logger.info(f"Injected {len(seed_dicts)} Lithuanian seed posts for Fizkonspektas simulation")
 
         # ========== Final step: Generate platform configs ==========
         report_progress(total_steps, "Generating platform configurations...")

@@ -599,6 +599,32 @@ def get_graph_data(graph_id: str):
     获取图谱数据（节点和边）
     """
     try:
+        # Handle local seed fallback -- Zep CE doesn't support graph storage
+        if graph_id == "local_seed_fallback":
+            from ..services.zep_entity_reader import ZepEntityReader
+            reader = ZepEntityReader()
+            filtered = reader.get_entities_from_local_seed()
+            nodes_data = [e.to_dict() for e in filtered.entities]
+            # Collect unique edges from entity related_edges
+            seen_edge_uuids = set()
+            edges_data = []
+            for entity in filtered.entities:
+                for edge in entity.related_edges:
+                    uid = edge.get("uuid", "")
+                    if uid and uid not in seen_edge_uuids:
+                        seen_edge_uuids.add(uid)
+                        edges_data.append(edge)
+            return jsonify({
+                "success": True,
+                "data": {
+                    "graph_id": "local_seed_fallback",
+                    "nodes": nodes_data,
+                    "edges": edges_data,
+                    "node_count": len(nodes_data),
+                    "edge_count": len(edges_data),
+                }
+            })
+
         if not Config.ZEP_API_KEY:
             return jsonify({
                 "success": False,

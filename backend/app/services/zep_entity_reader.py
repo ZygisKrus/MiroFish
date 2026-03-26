@@ -213,24 +213,20 @@ class ZepEntityReader:
         import uuid
         
         # 查找最新的种子文件
+        # Use __file__-relative path to guarantee correct resolution regardless of cwd.
+        # __file__ is backend/app/services/zep_entity_reader.py, so ../../../../ is the project root.
+        _PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../..'))
         seed_paths = [
             "domain/vu_physics/seeds/refined_mega_seed.md",
             "domain/vu_physics/seeds/mega_seed_world_book.md"
         ]
-        
+
         target_path = None
         for path in seed_paths:
-            # 尝试绝对路径和相对路径
-            paths_to_try = [
-                os.path.abspath(os.path.join(os.getcwd(), path)),
-                os.path.abspath(os.path.join(os.getcwd(), "backend", path)),
-                os.path.abspath(os.path.join(os.getcwd(), "..", path))
-            ]
-            for p in paths_to_try:
-                if os.path.exists(p):
-                    target_path = p
-                    break
-            if target_path: break
+            p = os.path.join(_PROJECT_ROOT, path)
+            if os.path.exists(p):
+                target_path = p
+                break
         
         if not target_path:
             logger.warning("未找到本地种子文件，无法进行本地解析")

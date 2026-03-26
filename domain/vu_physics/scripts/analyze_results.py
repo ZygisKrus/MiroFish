@@ -16,6 +16,16 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 SIM_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "../../../backend/uploads/simulations"))
 RESULTS_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "../results"))
 
+PLATFORM_DISPLAY_NAMES = {
+    "instagram": "Instagram/Telegram",
+    "telegram": "Telegram",
+    "facebook": "Facebook Groups",
+    "physical": "Word-of-Mouth",
+    "website": "Direct Website",
+    "twitter": "Instagram/Telegram (legacy)",
+    "reddit": "Facebook/Forums (legacy)",
+}
+
 # Keywords to track (English + Lithuanian)
 KEYWORDS = {
     "fizkonspektas": ["fizkonspektas"],
@@ -193,7 +203,9 @@ def print_scenario_report(result, rank=None):
         return
 
     print(f"Total Interactions: {result['total_interactions']}")
-    print(f"Platform Split: {dict(result['platforms'])}")
+    platform_display = {PLATFORM_DISPLAY_NAMES.get(p, p): count
+                        for p, count in result['platforms'].items()}
+    print(f"Platform Split: {platform_display}")
 
     total_sent = sum(result["sentiment"].values()) or 1
     print(f"\nSentiment ({total_sent} analyzed):")
