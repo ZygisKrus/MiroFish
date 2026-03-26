@@ -10,7 +10,7 @@
 **Status:** Live, ~100+ paying users
 **Tech Stack:** React 19, Firebase (Auth/Firestore/Functions/Hosting), Stripe payments, OpenAI GPT-4
 
-### Content Inventory (28 courses, ~120,000 lines of academic content)
+### Content Inventory (25 courses, ~120,000 lines of academic content)
 
 **Physics (9 courses):**
 - Mechanikos konspektas (Mechanics) — 1st year, ~4000+ lines

@@ -7,12 +7,23 @@ Phase 2: Test top 3 winners from Phase 1 x 3 Design variants (9 more scenarios)
 Total: Up to 18 scenarios, each running 28 simulated days (112 rounds at 4 rounds/day).
 """
 
+import sys
 import requests
 import json
 import time
 import os
 import argparse
 from datetime import datetime
+
+_BACKEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../backend"))
+if _BACKEND_DIR not in sys.path:
+    sys.path.insert(0, _BACKEND_DIR)
+
+try:
+    from app.services.academic_calendar import AcademicCalendar, AcademicCalendarConfig
+    _CALENDAR_AVAILABLE = True
+except ImportError:
+    _CALENDAR_AVAILABLE = False
 
 BASE_URL = "http://127.0.0.1:5001/api"
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -78,7 +89,37 @@ PHASE_1_SCENARIOS = [
 ACADEMIC_CONTEXT = "mid"  # Start mid-semester, building toward midterms
 
 
-def build_scenario_requirement(scenario):
+def build_academic_context_description(academic_start: str) -> str:
+    """Build a data-rich academic context description using AcademicCalendar"""
+    if not _CALENDAR_AVAILABLE:
+        return f"Academic calendar: Start at '{academic_start}' point in semester."
+
+    config = AcademicCalendarConfig(semester_start_point=academic_start)
+    calendar = AcademicCalendar(config)
+
+    lines = [f"ACADEMIC CALENDAR (start: '{academic_start}', 28-day window):"]
+
+    # Sample key days
+    prev_period = None
+    for day in range(1, 29):
+        day_cfg = calendar.get_day_config(day)
+        period_name = day_cfg.academic_period.value
+        if period_name != prev_period:
+            m = day_cfg.modifiers
+            lines.append(
+                f"  Day {day:2d}+: {period_name.upper()} "
+                f"[study_interest={m.study_tool_interest:.1f}, "
+                f"stress={m.exam_stress:.1f}, "
+                f"price_sensitivity={m.price_sensitivity:.1f}, "
+                f"churn_risk={m.churn_risk:.1f}, "
+                f"trial_pressure={m.trial_conversion_pressure:.1f}]"
+            )
+            prev_period = period_name
+
+    return "\n".join(lines)
+
+
+def build_scenario_requirement(scenario, academic_start=None):
     """Build the simulation requirement string for a scenario"""
     m = MARKETING[scenario["marketing"]]
     p = PRICING[scenario["pricing"]]
@@ -92,8 +133,7 @@ def build_scenario_requirement(scenario):
         f"\n\nPRICING MODEL ({scenario['pricing']}): {p} "
         f"\n\nPRODUCT EMPHASIS ({scenario['emphasis']}): {e} "
         f"\n\nDESIGN VARIANT ({scenario['design']}): {d} "
-        f"\n\nACADEMIC CONTEXT: Simulation starts mid-semester, building toward midterm exams. "
-        f"Week 1-2: Normal semester. Week 3: Pre-exam stress rises. Week 4: Exam week (sesija). "
+        f"\n\nACADEMIC CONTEXT: {build_academic_context_description(academic_start or ACADEMIC_CONTEXT)}"
         f"\n\nKEY METRICS TO TRACK: awareness_pct, trial_signups, conversion_rate, total_revenue_eur, "
         f"churn_rate, account_sharing_incidents, net_promoter_score, design_bounce_rate. "
         f"\n\nAGENT BEHAVIOR: Students must reason about price in terms of 'Jammi kebabs' "
@@ -117,7 +157,7 @@ def run_scenario(scenario, rounds, academic_start="mid"):
         return None
 
     # Build requirement
-    simulation_requirement = build_scenario_requirement(scenario)
+    simulation_requirement = build_scenario_requirement(scenario, academic_start)
 
     additional_context = (
         "CRITICAL: This simulation takes place in Lithuania, at Vilnius University Physics Faculty. "
@@ -351,13 +391,25 @@ def main():
         if args.top_scenarios:
             top_ids = [s.strip() for s in args.top_scenarios.split(",")]
         else:
-            # Try to read from Phase 1 results
+            # Try to read score-ranked top 3 from analysis report first
+            analysis_path = os.path.join(RESULTS_DIR, "analysis_report.json")
             results_path = os.path.join(RESULTS_DIR, "phase_1_results.json")
-            if os.path.exists(results_path):
-                with open(results_path) as f:
-                    phase_1_data = json.load(f)
-                top_ids = list(phase_1_data.keys())[:3]
-                print(f"Using top 3 from Phase 1: {top_ids}")
+
+            if os.path.exists(analysis_path):
+                with open(analysis_path) as f:
+                    analysis_data = json.load(f)
+                ranked = analysis_data.get("phase_1_ranking", [])
+                top_ids = [r["scenario"]["id"] for r in ranked[:3] if r.get("scenario", {}).get("id")]
+                if top_ids:
+                    print(f"Using top 3 from Phase 1 analysis (score-ranked): {top_ids}")
+                else:
+                    print("WARNING: analysis_report.json found but has no rankings. Run analyze_results.py after Phase 1.")
+                    return
+            elif os.path.exists(results_path):
+                print("WARNING: No analysis_report.json found. Phase 1 results exist but haven't been analyzed.")
+                print("Run: python analyze_results.py  -- then re-run Phase 2")
+                print("Or provide --top-scenarios manually (e.g. --top-scenarios S4,S8,S6)")
+                return
             else:
                 print("ERROR: No Phase 1 results found. Run Phase 1 first or provide --top-scenarios.")
                 return

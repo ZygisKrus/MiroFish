@@ -109,7 +109,7 @@ class TimeSimulationConfig:
     morning_activity_multiplier: float = 0.15
 
     # Work/lecture hours
-    work_hours: List[int] = field(default_factory=lambda: [9, 10, 11, 12, 13, 14, 15, 16, 17])
+    work_hours: List[int] = field(default_factory=lambda: [9, 10, 11, 12, 13, 14, 15])
     work_activity_multiplier: float = 0.30
 
     # Late night cramming hours

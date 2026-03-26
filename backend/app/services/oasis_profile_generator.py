@@ -204,8 +204,9 @@ class OasisProfileGenerator:
     
     # 常见国家列表
     COUNTRIES = [
-        "China", "US", "UK", "Japan", "Germany", "France", 
-        "Canada", "Australia", "Brazil", "India", "South Korea"
+        "Lietuva", "Latvija", "Estija", "Lenkija", "Vokietija",
+        "Ukraina", "Baltarusija", "Cekija", "Suomija", "Prancuzija",
+        "Italija", "Ispanija", "Nyderlandai"
     ]
     
     # 个人类型实体（需要生成具体人设）
@@ -326,6 +327,17 @@ class OasisProfileGenerator:
             interested_topics=profile_data.get("interested_topics", []),
             source_entity_uuid=entity.uuid,
             source_entity_type=entity_type,
+            budget_monthly_eur=profile_data.get("budget_monthly_eur"),
+            price_sensitivity=profile_data.get("price_sensitivity"),
+            design_preference=profile_data.get("design_preference"),
+            exam_stress_level=profile_data.get("exam_stress_level"),
+            year_of_study=profile_data.get("year_of_study"),
+            social_influence_radius=profile_data.get("social_influence_radius"),
+            behavioral_archetype=profile_data.get("behavioral_archetype"),
+            decision_triggers=profile_data.get("decision_triggers", []),
+            dorm_name=profile_data.get("dorm_name"),
+            dorm_floor=profile_data.get("dorm_floor"),
+            study_group_id=profile_data.get("study_group_id"),
         )
     
     def _generate_username(self, name: str) -> str:
@@ -781,6 +793,17 @@ class OasisProfileGenerator:
 6. country: Country (e.g., "Lietuva")
 7. profession: 职业
 8. interested_topics: 感兴趣话题数组
+9. budget_monthly_eur: integer 400-800 (student monthly budget in EUR)
+10. price_sensitivity: float 0.0-1.0 (0=will pay anything, 1=extremely price-conscious)
+11. design_preference: one of "minimalist", "traditional", "premium"
+12. exam_stress_level: integer 1-10
+13. year_of_study: integer 1-4
+14. social_influence_radius: integer 1-5 (how many peers this person influences)
+15. behavioral_archetype: one of "panic_buyer", "social_optimizer", "quality_seeker", "skeptic", "tech_enthusiast", "passive_observer"
+16. decision_triggers: array of strings chosen from ["exam_panic", "peer_recommendation", "ad_exposure", "curiosity", "price_drop", "trial_expiry"]
+17. dorm_name: one of "Kamciatka", "Niujorkas", "commuter", or null if not applicable
+18. dorm_floor: integer or null
+19. study_group_id: string like "SG-1" through "SG-20", or null
 
 重要:
 - 所有字段值必须是字符串或数字，不要使用换行符
@@ -788,6 +811,8 @@ class OasisProfileGenerator:
 - Use Lithuanian (except for the gender field which must be male/female).
 - 内容要与实体信息保持一致
 - age必须是有效的整数，gender必须是"male"或"female"
+- budget_monthly_eur, price_sensitivity, exam_stress_level, year_of_study, social_influence_radius must be numbers within specified ranges
+- decision_triggers must be a JSON array of strings
 """
 
     def _build_group_persona_prompt(

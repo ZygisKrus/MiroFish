@@ -104,7 +104,7 @@
 - **Brigita Navickaitė** (Physics, 1st, ISFP): Social dreamer; wants the app to have a 'Chat with other students' feature.
 - **Laurynas Mickus** (Physics, 3rd, INTP): Quantum simulation fan; uses the app to debug his Python code.
 - **Rugilė Stankevičiūtė** (Physics, 2nd, INTJ): Notes collector; has 500GB of 'Fizkonspektas' screenshots.
-- **Dominykas Balčiūnas** (Economics, 4th, ENTJ): Stipend spender; spent his whole monthly allowance on the 'All Access' pass.
+- **Dominykas Varnelis** (Economics, 4th, ENTJ): Stipend spender; spent his whole monthly allowance on the 'All Access' pass.
 - **Viltė Jakštaitė** (Physics, 1st, ISFJ): Homesick; uses the app to study so she can go home to Kaunas earlier on weekends.
 - **Arnas Petrauskas** (Physics, 3rd, ISTP): Messy room, clear mind; uses the app because he lost his physical notebooks.
 - **Eglė Rimkutė** (Physics, 2nd, INFP): Shower time scheduler; uses the app while waiting in the Niujorkas shower queue.
@@ -133,7 +133,7 @@
 - **Nojus Žilinskas** (Economics, 4th, ENTJ): Crypto thesis; uses the app's math modules for his blockchain analysis.
 - **Amelija Balčiūnaitė** (Physics, 2nd, ISTJ): Data analyst; thinks the app's data visualization is 'inferior to Excel'.
 - **Dominykas Kavaliauskas** (Physics, 3rd, INTP): Microwave fixer; uses the app to find the resonant frequency of the dorm microwave.
-- **Austėja Vasiliauskaitė** (Physics, 4th, INTJ): Bus hater; uses the app to study while walking to Saulėtekis.
+- **Austėja Morkūnaitė** (Physics, 4th, INTJ): Bus hater; uses the app to study while walking to Saulėtekis.
 - **Jokūbas Rimkus** (Communications, 2nd, ENFP): Viral content; trying to make 'Fizkonspektas' a meme on Lithuanian Reddit.
 - **Urtė Stankevičiūtė** (Physics, 1st, ISFP): Exam fear; thinks the app is a 'magic wand' that will make exams disappear.
 - **Lukas Kazlauskas** (Physics, 2nd, INTP): Theory vs Practice; uses the app to argue with professors about 'theoretical edge cases'.

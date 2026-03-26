@@ -70,7 +70,7 @@ def analyze_scenario(sim_id, scenario_meta=None):
         return result
 
     # Check all platform subdirectories
-    for platform in ["instagram", "telegram", "facebook", "physical", "website", "twitter", "reddit"]:
+    for platform in ["instagram", "telegram", "facebook", "physical", "website"]:
         actions_path = os.path.join(sim_path, platform, "actions.jsonl")
         if not os.path.exists(actions_path):
             continue
