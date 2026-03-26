@@ -480,7 +480,12 @@ class ZepToolsService:
             SearchResult: 搜索结果
         """
         logger.info(f"图谱搜索: graph_id={graph_id}, query={query[:50]}...")
-        
+
+        # Sentinel: Zep graph API unavailable (self-hosted CE). Return empty result immediately.
+        if graph_id == "local_seed_fallback":
+            logger.debug("search_graph: local_seed_fallback — skipping Zep, returning empty result")
+            return SearchResult(facts=[], edges=[], nodes=[], query=query, total_count=0)
+
         # 尝试使用Zep Cloud Search API
         try:
             search_results = self._call_with_retry(
@@ -561,7 +566,12 @@ class ZepToolsService:
             SearchResult: 搜索结果
         """
         logger.info(f"使用本地搜索: query={query[:30]}...")
-        
+
+        # Sentinel: nothing to search locally either — no real graph was built.
+        if graph_id == "local_seed_fallback":
+            logger.debug("_local_search: local_seed_fallback — returning empty result")
+            return SearchResult(facts=[], edges=[], nodes=[], query=query, total_count=0)
+
         facts = []
         edges_result = []
         nodes_result = []

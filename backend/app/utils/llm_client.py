@@ -44,6 +44,31 @@ class LLMClient:
         """带有指数退避重试的底层调用"""
         return self.client.chat.completions.create(**kwargs)
 
+    @staticmethod
+    def _inject_language(messages: List[Dict[str, str]]) -> List[Dict[str, str]]:
+        """Prepend output-language instruction to the system message.
+
+        All system prompts in this codebase are written in Chinese (original
+        project language). When OUTPUT_LANGUAGE != 'Chinese' we prepend a
+        short English override header so the model responds in the correct
+        language for non-Chinese simulation contexts.
+        """
+        lang = Config.OUTPUT_LANGUAGE or "English"
+        if lang.strip().lower() == "chinese":
+            return messages  # Original Chinese behaviour — no injection needed
+        header = (
+            f"IMPORTANT: You must respond entirely in {lang}. "
+            f"All text, field values, summaries, and analysis must be written in {lang}. "
+            f"Do not use Chinese or any other language.\n\n"
+        )
+        result = []
+        for msg in messages:
+            if msg.get("role") == "system":
+                result.append({**msg, "content": header + msg["content"]})
+            else:
+                result.append(msg)
+        return result
+
     def chat(
         self,
         messages: List[Dict[str, str]],
@@ -65,6 +90,7 @@ class LLMClient:
         Returns:
             模型响应文本
         """
+        messages = self._inject_language(messages)
         kwargs = {
             "model": self.model,
             "messages": messages,
