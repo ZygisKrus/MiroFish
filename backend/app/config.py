@@ -70,6 +70,10 @@ class Config:
         'TREND', 'REFRESH', 'DO_NOTHING', 'FOLLOW', 'MUTE'
     ]
     
+    # Output language for LLM responses (injected as header into every system prompt)
+    # Set to "English" for non-Chinese simulations; set to "Chinese" to disable injection.
+    OUTPUT_LANGUAGE = os.environ.get('OUTPUT_LANGUAGE', 'English')
+
     # Report Agent配置
     REPORT_AGENT_MAX_TOOL_CALLS = int(os.environ.get('REPORT_AGENT_MAX_TOOL_CALLS', '5'))
     REPORT_AGENT_MAX_REFLECTION_ROUNDS = int(os.environ.get('REPORT_AGENT_MAX_REFLECTION_ROUNDS', '2'))

@@ -66,7 +66,7 @@ ONTOLOGY_SYSTEM_PROMPT = """你是一个专业的知识图谱本体设计专家�
             "attributes": []
         }
     ],
-    "analysis_summary": "Brief analysis of text content (in English)"
+    "analysis_summary": "Brief analysis summary of the text and entity design rationale"
 }
 ```
 

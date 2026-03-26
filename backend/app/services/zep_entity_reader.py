@@ -298,20 +298,26 @@ class ZepEntityReader:
             return FilteredEntities(entities=[], entity_types=set(), total_count=0, filtered_count=0)
 
     def filter_defined_entities(
-        self, 
+        self,
         graph_id: str,
         defined_entity_types: Optional[List[str]] = None,
         enrich_with_edges: bool = True
     ) -> FilteredEntities:
         """
         筛选出符合预定义实体类型的节点。
-        如果 Zep 访问受限（403/429），自动激活本地回退解析。
+        如果 Zep 访问受限（403/404/429），自动激活本地回退解析。
         """
+        # Sentinel value set when Zep graph API is unavailable (self-hosted CE mode).
+        # Skip all Zep calls and go straight to local seed.
+        if graph_id == "local_seed_fallback":
+            logger.info("graph_id=local_seed_fallback — bypassing Zep, using local seed file")
+            return self.get_entities_from_local_seed()
+
         try:
             return self._filter_defined_entities_logic(graph_id, defined_entity_types, enrich_with_edges)
         except Exception as e:
             err_msg = str(e).lower()
-            if "403" in err_msg or "429" in err_msg or "forbidden" in err_msg or "limit" in err_msg:
+            if "403" in err_msg or "404" in err_msg or "429" in err_msg or "forbidden" in err_msg or "limit" in err_msg:
                 logger.warning(f"Zep 访问受限 ({err_msg})，激活本地种子回退机制...")
                 return self.get_entities_from_local_seed()
             raise
