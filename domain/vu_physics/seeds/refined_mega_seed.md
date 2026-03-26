@@ -1,3 +1,30 @@
+# REFINED PRODUCTION SEED - Fizkonspektas Launch Simulation
+# Generated: 2026-03-26 | Version: 2.0 (Deep World Rewrite)
+
+## PRODUCT GROUND TRUTH
+- **URL:** fizkonspektai.lt | **Status:** Live, ~100+ paying users
+- **Content:** 28 courses, ~120,000 lines of academic content (Physics, Math, Engineering, Economics)
+- **Pricing:** 5.99 EUR/course (one-time) | 9.99 EUR/month subscription (7-day free trial) | Lifetime all-access
+- **AI Assistant:** GPT-4 powered, context-aware, Shadow DOM chat on all course pages
+- **Design:** "Anti-Halation Brutalism" - black/white, JetBrains Mono, zero border-radius, hard shadows
+- **Conversion Funnel:** Browse free -> blurred paywall -> micro-quiz (sunk cost) -> social proof toast -> pricing modal
+
+## SIMULATION PARAMETERS
+- **Timeline:** 28 days (112 rounds at 4 rounds/day)
+- **Academic context:** Mid-semester -> pre-exam -> exam week (sesija) -> post-exam
+- **Platforms:** Instagram, Telegram, Facebook groups, physical word-of-mouth, direct website
+- **Timezone:** Europe/Vilnius (UTC+2/+3)
+- **Population:** 150 agents with explicit social graph (dorm clusters, study groups, lecture cohorts)
+
+## BETTA-FISH STRATEGIC ANALYSIS (Updated)
+- **Market Analyst:** The 5.99 EUR per-course option is the "safe entry point" - lower friction than subscription. Most conversions will start here during exam panic.
+- **Psychology Expert:** The sunk-cost micro-quiz (3 questions -> progress bar -> paywall) is the strongest conversion mechanism. Students who answer 3 questions feel invested.
+- **Lithuanian Cultural Auditor:** The "Jammi kebab" price benchmark is real - 9.99 EUR = 2 kebabs is how students calculate value. Account sharing (3-5 students splitting one login) is the #1 revenue threat.
+- **Scenario B "Social Survivor" won previous tests** - peer pressure and FOMO drive adoption faster than individual value proposition.
+- **Key insight:** Position AI assistant as "personal tutor" NOT "study shortcut" - the ethics framing matters to professors and skeptics.
+
+---
+
 # 1. The Unified Student Roster (150 Unique Agents)
 
 - **Simas Urbonas** (Physics, 1st, INTP): Terrified of prof. Vičas and Calculus I; considers €9.99 a small price to avoid a 'skola', but doesn't have the cash.

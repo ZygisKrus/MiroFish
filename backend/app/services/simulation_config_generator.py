@@ -1,13 +1,14 @@
 """
-模拟配置智能生成器
-使用LLM根据模拟需求、文档内容、图谱信息自动生成细致的模拟参数
-实现全程自动化，无需人工设置参数
+Simulation Config Generator
+Uses LLM to auto-generate detailed simulation parameters based on
+simulation requirements, document content, and graph entity info.
+Fully automated -- no manual parameter tuning needed.
 
-采用分步生成策略，避免一次性生成过长内容导致失败：
-1. 生成时间配置
-2. 生成事件配置
-3. 分批生成Agent配置
-4. 生成平台配置
+Step-by-step generation strategy (avoids overly long single responses):
+1. Generate time config
+2. Generate event config
+3. Generate agent configs in batches
+4. Generate platform config
 """
 
 import json
@@ -24,156 +25,170 @@ from .zep_entity_reader import EntityNode, ZepEntityReader
 
 logger = get_logger('mirofish.simulation_config')
 
-# 中国作息时间配置（北京时间）
-CHINA_TIMEZONE_CONFIG = {
-    # 深夜时段（几乎无人活动）
-    "dead_hours": [0, 1, 2, 3, 4, 5],
-    # 早间时段（逐渐醒来）
-    "morning_hours": [6, 7, 8],
-    # 工作时段
-    "work_hours": [9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
-    # 晚间高峰（最活跃）
-    "peak_hours": [19, 20, 21, 22],
-    # 夜间时段（活跃度下降）
-    "night_hours": [23],
-    # 活跃度系数
+# Lithuanian VU Physics student activity patterns (Europe/Vilnius, UTC+2/+3)
+LITHUANIA_TIMEZONE_CONFIG = {
+    # Deep sleep (almost no activity)
+    "dead_hours": [2, 3, 4, 5, 6],
+    # Early morning commute to Sauletekis
+    "morning_hours": [7, 8],
+    # Lecture/lab hours at VU Physics Faculty
+    "lecture_hours": [9, 10, 11, 12, 13, 14, 15],
+    # Post-lecture wind-down, Jammi kebab runs
+    "transition_hours": [16, 17],
+    # Peak dorm time - Kamciatka/Niujorkas (most active)
+    "peak_hours": [18, 19, 20, 21, 22],
+    # Late night cramming (especially during sesija)
+    "night_hours": [23, 0, 1],
+    # Activity multipliers
     "activity_multipliers": {
-        "dead": 0.05,      # 凌晨几乎无人
-        "morning": 0.4,    # 早间逐渐活跃
-        "work": 0.7,       # 工作时段中等
-        "peak": 1.5,       # 晚间高峰
-        "night": 0.5       # 深夜下降
+        "dead": 0.05,        # 2-6 AM: students sleeping
+        "morning": 0.15,     # 7-8 AM: commuting to campus
+        "lecture": 0.30,     # 9-15: in lectures, phone checks between classes
+        "transition": 0.50,  # 16-17: post-lecture, food runs
+        "peak": 1.0,         # 18-22: peak dorm studying/socializing
+        "night": 0.60        # 23-1: late night cramming
     }
 }
 
 
 @dataclass
 class AgentActivityConfig:
-    """单个Agent的活动配置"""
+    """Activity config for a single Agent"""
     agent_id: int
     entity_uuid: str
     entity_name: str
     entity_type: str
-    
-    # 活跃度配置 (0.0-1.0)
-    activity_level: float = 0.5  # 整体活跃度
-    
-    # 发言频率（每小时预期发言次数）
+
+    # Activity level (0.0-1.0)
+    activity_level: float = 0.5
+
+    # Posting frequency (expected posts per hour)
     posts_per_hour: float = 1.0
     comments_per_hour: float = 2.0
-    
-    # 活跃时间段（24小时制，0-23）
+
+    # Active hours (24h format, 0-23)
     active_hours: List[int] = field(default_factory=lambda: list(range(8, 23)))
-    
-    # 响应速度（对热点事件的反应延迟，单位：模拟分钟）
+
+    # Response speed (reaction delay to hot events, in simulated minutes)
     response_delay_min: int = 5
     response_delay_max: int = 60
-    
-    # 情感倾向 (-1.0到1.0，负面到正面)
+
+    # Sentiment bias (-1.0 to 1.0, negative to positive)
     sentiment_bias: float = 0.0
-    
-    # 立场（对特定话题的态度）
+
+    # Stance (attitude towards specific topics)
     stance: str = "neutral"  # supportive, opposing, neutral, observer
-    
-    # 影响力权重（决定其发言被其他Agent看到的概率）
+
+    # Influence weight (probability of posts being seen by other Agents)
     influence_weight: float = 1.0
 
 
-@dataclass  
+@dataclass
 class TimeSimulationConfig:
-    """时间模拟配置（基于中国人作息习惯）"""
-    # 模拟总时长（模拟小时数）
-    total_simulation_hours: int = 72  # 默认模拟72小时（3天）
-    
-    # 每轮代表的时间（模拟分钟）- 默认60分钟（1小时），加快时间流速
-    minutes_per_round: int = 60
-    
-    # 每小时激活的Agent数量范围
+    """Time simulation config (Lithuanian VU Physics student schedule)"""
+    # Total simulation duration (simulated hours)
+    total_simulation_hours: int = 672  # 28 days
+
+    # Time per round (simulated minutes) - 360 min = 6 hours, 4 rounds/day
+    minutes_per_round: int = 360
+
+    # Number of agents activated per hour
     agents_per_hour_min: int = 5
     agents_per_hour_max: int = 20
-    
-    # 高峰时段（晚间19-22点，中国人最活跃的时间）
-    peak_hours: List[int] = field(default_factory=lambda: [19, 20, 21, 22])
-    peak_activity_multiplier: float = 1.5
-    
-    # 低谷时段（凌晨0-5点，几乎无人活动）
-    off_peak_hours: List[int] = field(default_factory=lambda: [0, 1, 2, 3, 4, 5])
-    off_peak_activity_multiplier: float = 0.05  # 凌晨活跃度极低
-    
-    # 早间时段
-    morning_hours: List[int] = field(default_factory=lambda: [6, 7, 8])
-    morning_activity_multiplier: float = 0.4
-    
-    # 工作时段
-    work_hours: List[int] = field(default_factory=lambda: [9, 10, 11, 12, 13, 14, 15, 16, 17, 18])
-    work_activity_multiplier: float = 0.7
+
+    # Peak hours (18-22, dorm studying/socializing)
+    peak_hours: List[int] = field(default_factory=lambda: [18, 19, 20, 21, 22])
+    peak_activity_multiplier: float = 1.0
+
+    # Off-peak hours (2-6 AM, deep sleep)
+    off_peak_hours: List[int] = field(default_factory=lambda: [2, 3, 4, 5, 6])
+    off_peak_activity_multiplier: float = 0.05
+
+    # Morning hours (commute to Sauletekis)
+    morning_hours: List[int] = field(default_factory=lambda: [7, 8])
+    morning_activity_multiplier: float = 0.15
+
+    # Work/lecture hours
+    work_hours: List[int] = field(default_factory=lambda: [9, 10, 11, 12, 13, 14, 15, 16, 17])
+    work_activity_multiplier: float = 0.30
+
+    # Late night cramming hours
+    night_hours: List[int] = field(default_factory=lambda: [23, 0, 1])
+    night_activity_multiplier: float = 0.60
+
+    # Post-lecture transition hours
+    transition_hours: List[int] = field(default_factory=lambda: [16, 17])
+    transition_activity_multiplier: float = 0.50
 
 
 @dataclass
 class EventConfig:
-    """事件配置"""
-    # 初始事件（模拟开始时的触发事件）
+    """Event configuration"""
+    # Initial events (triggered at simulation start)
     initial_posts: List[Dict[str, Any]] = field(default_factory=list)
-    
-    # 定时事件（在特定时间触发的事件）
+
+    # Scheduled events (triggered at specific times)
     scheduled_events: List[Dict[str, Any]] = field(default_factory=list)
-    
-    # 热点话题关键词
+
+    # Hot topic keywords
     hot_topics: List[str] = field(default_factory=list)
-    
-    # 舆论引导方向
+
+    # Narrative direction
     narrative_direction: str = ""
 
 
 @dataclass
 class PlatformConfig:
-    """平台特定配置"""
-    platform: str  # twitter or reddit
-    
-    # 推荐算法权重
-    recency_weight: float = 0.4  # 时间新鲜度
-    popularity_weight: float = 0.3  # 热度
-    relevance_weight: float = 0.3  # 相关性
-    
-    # 病毒传播阈值（达到多少互动后触发扩散）
+    """Platform-specific configuration"""
+    platform: str  # Valid: "instagram", "telegram", "facebook", "physical", "website"
+
+    # Recommendation algorithm weights
+    recency_weight: float = 0.4
+    popularity_weight: float = 0.3
+    relevance_weight: float = 0.3
+
+    # Viral threshold (interactions needed to trigger spread)
     viral_threshold: int = 10
-    
-    # 回声室效应强度（相似观点聚集程度）
+
+    # Echo chamber strength (how much similar views cluster)
     echo_chamber_strength: float = 0.5
 
 
 @dataclass
 class SimulationParameters:
-    """完整的模拟参数配置"""
-    # 基础信息
+    """Complete simulation parameter configuration"""
+    # Basic info
     simulation_id: str
     project_id: str
     graph_id: str
     simulation_requirement: str
-    
-    # 时间配置
+
+    # Time config
     time_config: TimeSimulationConfig = field(default_factory=TimeSimulationConfig)
-    
-    # Agent配置列表
+
+    # Agent config list
     agent_configs: List[AgentActivityConfig] = field(default_factory=list)
-    
-    # 事件配置
+
+    # Event config
     event_config: EventConfig = field(default_factory=EventConfig)
-    
-    # 平台配置
-    twitter_config: Optional[PlatformConfig] = None
-    reddit_config: Optional[PlatformConfig] = None
-    
-    # LLM配置
+
+    # Platform configs
+    instagram_config: Optional[PlatformConfig] = None
+    telegram_config: Optional[PlatformConfig] = None
+    facebook_config: Optional[PlatformConfig] = None
+    physical_config: Optional[PlatformConfig] = None  # Word-of-mouth, stickers, flyers
+    website_config: Optional[PlatformConfig] = None    # Direct website visits
+
+    # LLM config
     llm_model: str = ""
     llm_base_url: str = ""
-    
-    # 生成元数据
+
+    # Generation metadata
     generated_at: str = field(default_factory=lambda: datetime.now().isoformat())
-    generation_reasoning: str = ""  # LLM的推理说明
-    
+    generation_reasoning: str = ""  # LLM reasoning notes
+
     def to_dict(self) -> Dict[str, Any]:
-        """转换为字典"""
+        """Convert to dictionary"""
         time_dict = asdict(self.time_config)
         return {
             "simulation_id": self.simulation_id,
@@ -183,43 +198,46 @@ class SimulationParameters:
             "time_config": time_dict,
             "agent_configs": [asdict(a) for a in self.agent_configs],
             "event_config": asdict(self.event_config),
-            "twitter_config": asdict(self.twitter_config) if self.twitter_config else None,
-            "reddit_config": asdict(self.reddit_config) if self.reddit_config else None,
+            "instagram_config": asdict(self.instagram_config) if self.instagram_config else None,
+            "telegram_config": asdict(self.telegram_config) if self.telegram_config else None,
+            "facebook_config": asdict(self.facebook_config) if self.facebook_config else None,
+            "physical_config": asdict(self.physical_config) if self.physical_config else None,
+            "website_config": asdict(self.website_config) if self.website_config else None,
             "llm_model": self.llm_model,
             "llm_base_url": self.llm_base_url,
             "generated_at": self.generated_at,
             "generation_reasoning": self.generation_reasoning,
         }
-    
+
     def to_json(self, indent: int = 2) -> str:
-        """转换为JSON字符串"""
+        """Convert to JSON string"""
         return json.dumps(self.to_dict(), ensure_ascii=False, indent=indent)
 
 
 class SimulationConfigGenerator:
     """
-    模拟配置智能生成器
-    
-    使用LLM分析模拟需求、文档内容、图谱实体信息，
-    自动生成最佳的模拟参数配置
-    
-    采用分步生成策略：
-    1. 生成时间配置和事件配置（轻量级）
-    2. 分批生成Agent配置（每批10-20个）
-    3. 生成平台配置
+    Simulation Config Generator
+
+    Uses LLM to analyse simulation requirements, document content, and
+    graph entity info, then auto-generates optimal simulation parameters.
+
+    Step-by-step generation strategy:
+    1. Generate time config and event config (lightweight)
+    2. Generate agent configs in batches (10-20 per batch)
+    3. Generate platform config
     """
-    
-    # 上下文最大字符数
+
+    # Max context character count
     MAX_CONTEXT_LENGTH = 50000
-    # 每批生成的Agent数量
+    # Agents per generation batch
     AGENTS_PER_BATCH = 15
-    
-    # 各步骤的上下文截断长度（字符数）
-    TIME_CONFIG_CONTEXT_LENGTH = 10000   # 时间配置
-    EVENT_CONFIG_CONTEXT_LENGTH = 8000   # 事件配置
-    ENTITY_SUMMARY_LENGTH = 300          # 实体摘要
-    AGENT_SUMMARY_LENGTH = 300           # Agent配置中的实体摘要
-    ENTITIES_PER_TYPE_DISPLAY = 20       # 每类实体显示数量
+
+    # Context truncation lengths per step (characters)
+    TIME_CONFIG_CONTEXT_LENGTH = 10000   # Time config
+    EVENT_CONFIG_CONTEXT_LENGTH = 8000   # Event config
+    ENTITY_SUMMARY_LENGTH = 300          # Entity summary
+    AGENT_SUMMARY_LENGTH = 300           # Agent config entity summary
+    ENTITIES_PER_TYPE_DISPLAY = 20       # Entities displayed per type
     
     def __init__(
         self,
@@ -232,7 +250,7 @@ class SimulationConfigGenerator:
         self.model_name = model_name or Config.LLM_REASONING_MODEL
         
         if not self.api_key:
-            raise ValueError("LLM_API_KEY 未配置")
+            raise ValueError("LLM_API_KEY not configured")
         
         self.client = OpenAI(
             api_key=self.api_key,
@@ -247,75 +265,81 @@ class SimulationConfigGenerator:
         simulation_requirement: str,
         document_text: str,
         entities: List[EntityNode],
-        enable_twitter: bool = True,
-        enable_reddit: bool = True,
+        enable_instagram: bool = True,
+        enable_telegram: bool = True,
+        enable_facebook: bool = True,
+        enable_physical: bool = True,
+        enable_website: bool = True,
         progress_callback: Optional[Callable[[int, int, str], None]] = None,
     ) -> SimulationParameters:
         """
-        智能生成完整的模拟配置（分步生成）
-        
+        Auto-generate complete simulation config (step-by-step).
+
         Args:
-            simulation_id: 模拟ID
-            project_id: 项目ID
-            graph_id: 图谱ID
-            simulation_requirement: 模拟需求描述
-            document_text: 原始文档内容
-            entities: 过滤后的实体列表
-            enable_twitter: 是否启用Twitter
-            enable_reddit: 是否启用Reddit
-            progress_callback: 进度回调函数(current_step, total_steps, message)
-            
+            simulation_id: Simulation ID
+            project_id: Project ID
+            graph_id: Graph ID
+            simulation_requirement: Simulation requirement description
+            document_text: Original document content
+            entities: Filtered entity list
+            enable_instagram: Enable Instagram platform
+            enable_telegram: Enable Telegram platform
+            enable_facebook: Enable Facebook platform
+            enable_physical: Enable physical word-of-mouth channel
+            enable_website: Enable direct website visits
+            progress_callback: Progress callback(current_step, total_steps, message)
+
         Returns:
-            SimulationParameters: 完整的模拟参数
+            SimulationParameters: Complete simulation parameters
         """
-        logger.info(f"开始智能生成模拟配置: simulation_id={simulation_id}, 实体数={len(entities)}")
-        
-        # 计算总步骤数
+        logger.info(f"Starting config generation: simulation_id={simulation_id}, entities={len(entities)}")
+
+        # Calculate total steps
         num_batches = math.ceil(len(entities) / self.AGENTS_PER_BATCH)
-        total_steps = 3 + num_batches  # 时间配置 + 事件配置 + N批Agent + 平台配置
+        total_steps = 3 + num_batches  # time config + event config + N agent batches + platform config
         current_step = 0
-        
+
         def report_progress(step: int, message: str):
             nonlocal current_step
             current_step = step
             if progress_callback:
                 progress_callback(step, total_steps, message)
             logger.info(f"[{step}/{total_steps}] {message}")
-        
-        # 1. 构建基础上下文信息
+
+        # 1. Build base context
         context = self._build_context(
             simulation_requirement=simulation_requirement,
             document_text=document_text,
             entities=entities
         )
-        
+
         reasoning_parts = []
-        
-        # ========== 步骤1: 生成时间配置 ==========
-        report_progress(1, "生成时间配置...")
+
+        # ========== Step 1: Generate time config ==========
+        report_progress(1, "Generating time configuration...")
         num_entities = len(entities)
         time_config_result = self._generate_time_config(context, num_entities)
         time_config = self._parse_time_config(time_config_result, num_entities)
-        reasoning_parts.append(f"时间配置: {time_config_result.get('reasoning', '成功')}")
-        
-        # ========== 步骤2: 生成事件配置 ==========
-        report_progress(2, "生成事件配置和热点话题...")
+        reasoning_parts.append(f"Time config: {time_config_result.get('reasoning', 'OK')}")
+
+        # ========== Step 2: Generate event config ==========
+        report_progress(2, "Generating event config and hot topics...")
         event_config_result = self._generate_event_config(context, simulation_requirement, entities)
         event_config = self._parse_event_config(event_config_result)
-        reasoning_parts.append(f"事件配置: {event_config_result.get('reasoning', '成功')}")
-        
-        # ========== 步骤3-N: 分批生成Agent配置 ==========
+        reasoning_parts.append(f"Event config: {event_config_result.get('reasoning', 'OK')}")
+
+        # ========== Steps 3-N: Generate agent configs in batches ==========
         all_agent_configs = []
         for batch_idx in range(num_batches):
             start_idx = batch_idx * self.AGENTS_PER_BATCH
             end_idx = min(start_idx + self.AGENTS_PER_BATCH, len(entities))
             batch_entities = entities[start_idx:end_idx]
-            
+
             report_progress(
                 3 + batch_idx,
-                f"生成Agent配置 ({start_idx + 1}-{end_idx}/{len(entities)})..."
+                f"Generating agent configs ({start_idx + 1}-{end_idx}/{len(entities)})..."
             )
-            
+
             batch_configs = self._generate_agent_configs_batch(
                 context=context,
                 entities=batch_entities,
@@ -323,41 +347,75 @@ class SimulationConfigGenerator:
                 simulation_requirement=simulation_requirement
             )
             all_agent_configs.extend(batch_configs)
-        
-        reasoning_parts.append(f"Agent配置: 成功生成 {len(all_agent_configs)} 个")
-        
-        # ========== 为初始帖子分配发布者 Agent ==========
-        logger.info("为初始帖子分配合适的发布者 Agent...")
+
+        reasoning_parts.append(f"Agent configs: generated {len(all_agent_configs)}")
+
+        # ========== Assign poster agents to initial posts ==========
+        logger.info("Assigning poster agents to initial posts...")
         event_config = self._assign_initial_post_agents(event_config, all_agent_configs)
         assigned_count = len([p for p in event_config.initial_posts if p.get("poster_agent_id") is not None])
-        reasoning_parts.append(f"初始帖子分配: {assigned_count} 个帖子已分配发布者")
-        
-        # ========== 最后一步: 生成平台配置 ==========
-        report_progress(total_steps, "生成平台配置...")
-        twitter_config = None
-        reddit_config = None
-        
-        if enable_twitter:
-            twitter_config = PlatformConfig(
-                platform="twitter",
-                recency_weight=0.4,
-                popularity_weight=0.3,
-                relevance_weight=0.3,
-                viral_threshold=10,
-                echo_chamber_strength=0.5
-            )
-        
-        if enable_reddit:
-            reddit_config = PlatformConfig(
-                platform="reddit",
+        reasoning_parts.append(f"Initial posts: {assigned_count} assigned")
+
+        # ========== Final step: Generate platform configs ==========
+        report_progress(total_steps, "Generating platform configurations...")
+
+        instagram_config = None
+        telegram_config = None
+        facebook_config = None
+        physical_config = None
+        website_config = None
+
+        if enable_instagram:
+            instagram_config = PlatformConfig(
+                platform="instagram",
                 recency_weight=0.3,
                 popularity_weight=0.4,
                 relevance_weight=0.3,
-                viral_threshold=15,
+                viral_threshold=8,
+                echo_chamber_strength=0.4
+            )
+
+        if enable_telegram:
+            telegram_config = PlatformConfig(
+                platform="telegram",
+                recency_weight=0.5,
+                popularity_weight=0.2,
+                relevance_weight=0.3,
+                viral_threshold=5,
+                echo_chamber_strength=0.7
+            )
+
+        if enable_facebook:
+            facebook_config = PlatformConfig(
+                platform="facebook",
+                recency_weight=0.2,
+                popularity_weight=0.3,
+                relevance_weight=0.5,
+                viral_threshold=12,
                 echo_chamber_strength=0.6
             )
-        
-        # 构建最终参数
+
+        if enable_physical:
+            physical_config = PlatformConfig(
+                platform="physical",
+                recency_weight=0.1,
+                popularity_weight=0.1,
+                relevance_weight=0.8,
+                viral_threshold=3,
+                echo_chamber_strength=0.3
+            )
+
+        if enable_website:
+            website_config = PlatformConfig(
+                platform="website",
+                recency_weight=0.3,
+                popularity_weight=0.2,
+                relevance_weight=0.5,
+                viral_threshold=20,
+                echo_chamber_strength=0.2
+            )
+
+        # Build final parameters
         params = SimulationParameters(
             simulation_id=simulation_id,
             project_id=project_id,
@@ -366,15 +424,18 @@ class SimulationConfigGenerator:
             time_config=time_config,
             agent_configs=all_agent_configs,
             event_config=event_config,
-            twitter_config=twitter_config,
-            reddit_config=reddit_config,
+            instagram_config=instagram_config,
+            telegram_config=telegram_config,
+            facebook_config=facebook_config,
+            physical_config=physical_config,
+            website_config=website_config,
             llm_model=self.model_name,
             llm_base_url=self.base_url,
             generation_reasoning=" | ".join(reasoning_parts)
         )
-        
-        logger.info(f"模拟配置生成完成: {len(params.agent_configs)} 个Agent配置")
-        
+
+        logger.info(f"Config generation complete: {len(params.agent_configs)} agent configs")
+
         return params
     
     def _build_context(
@@ -383,51 +444,48 @@ class SimulationConfigGenerator:
         document_text: str,
         entities: List[EntityNode]
     ) -> str:
-        """构建LLM上下文，截断到最大长度"""
-        
-        # 实体摘要
+        """Build LLM context, truncated to max length"""
+
         entity_summary = self._summarize_entities(entities)
-        
-        # 构建上下文
+
         context_parts = [
-            f"## 模拟需求\n{simulation_requirement}",
-            f"\n## 实体信息 ({len(entities)}个)\n{entity_summary}",
+            f"## Simulation Requirement\n{simulation_requirement}",
+            f"\n## Entity Info ({len(entities)} entities)\n{entity_summary}",
         ]
-        
+
         current_length = sum(len(p) for p in context_parts)
-        remaining_length = self.MAX_CONTEXT_LENGTH - current_length - 500  # 留500字符余量
-        
+        remaining_length = self.MAX_CONTEXT_LENGTH - current_length - 500
+
         if remaining_length > 0 and document_text:
             doc_text = document_text[:remaining_length]
             if len(document_text) > remaining_length:
-                doc_text += "\n...(文档已截断)"
-            context_parts.append(f"\n## 原始文档内容\n{doc_text}")
-        
+                doc_text += "\n...(document truncated)"
+            context_parts.append(f"\n## Source Document\n{doc_text}")
+
         return "\n".join(context_parts)
-    
+
     def _summarize_entities(self, entities: List[EntityNode]) -> str:
-        """生成实体摘要"""
+        """Generate entity summary"""
         lines = []
-        
-        # 按类型分组
+
+        # Group by type
         by_type: Dict[str, List[EntityNode]] = {}
         for e in entities:
             t = e.get_entity_type() or "Unknown"
             if t not in by_type:
                 by_type[t] = []
             by_type[t].append(e)
-        
+
         for entity_type, type_entities in by_type.items():
-            lines.append(f"\n### {entity_type} ({len(type_entities)}个)")
-            # 使用配置的显示数量和摘要长度
+            lines.append(f"\n### {entity_type} ({len(type_entities)})")
             display_count = self.ENTITIES_PER_TYPE_DISPLAY
             summary_len = self.ENTITY_SUMMARY_LENGTH
             for e in type_entities[:display_count]:
                 summary_preview = (e.summary[:summary_len] + "...") if len(e.summary) > summary_len else e.summary
                 lines.append(f"- {e.name}: {summary_preview}")
             if len(type_entities) > display_count:
-                lines.append(f"  ... 还有 {len(type_entities) - display_count} 个")
-        
+                lines.append(f"  ... and {len(type_entities) - display_count} more")
+
         return "\n".join(lines)
     
     def _call_llm_with_retry(self, prompt: str, system_prompt: str) -> Dict[str, Any]:
@@ -592,52 +650,57 @@ class SimulationConfigGenerator:
             return self._get_default_time_config(num_entities)
     
     def _get_default_time_config(self, num_entities: int) -> Dict[str, Any]:
-        """获取默认时间配置（中国人作息）"""
+        """Default time config for Lithuanian VU Physics students"""
         return {
-            "total_simulation_hours": 72,
-            "minutes_per_round": 60,  # 每轮1小时，加快时间流速
+            "total_simulation_hours": 672,  # 28 days
+            "minutes_per_round": 360,  # 6 hours per round = 4 rounds/day
             "agents_per_hour_min": max(1, num_entities // 15),
             "agents_per_hour_max": max(5, num_entities // 5),
-            "peak_hours": [19, 20, 21, 22],
-            "off_peak_hours": [0, 1, 2, 3, 4, 5],
-            "morning_hours": [6, 7, 8],
-            "work_hours": [9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
-            "reasoning": "使用默认中国人作息配置（每轮1小时）"
+            "peak_hours": [18, 19, 20, 21, 22],
+            "off_peak_hours": [2, 3, 4, 5, 6],
+            "morning_hours": [7, 8],
+            "work_hours": [9, 10, 11, 12, 13, 14, 15, 16, 17],
+            "night_hours": [23, 0, 1],
+            "transition_hours": [16, 17],
+            "reasoning": "Default Lithuanian VU Physics student schedule (28-day simulation, 4 rounds/day)"
         }
-    
+
     def _parse_time_config(self, result: Dict[str, Any], num_entities: int) -> TimeSimulationConfig:
-        """解析时间配置结果，并验证agents_per_hour值不超过总agent数"""
-        # 获取原始值
+        """Parse time config result, validating agents_per_hour doesn't exceed total agent count"""
         agents_per_hour_min = result.get("agents_per_hour_min", max(1, num_entities // 15))
         agents_per_hour_max = result.get("agents_per_hour_max", max(5, num_entities // 5))
-        
-        # 验证并修正：确保不超过总agent数
+
+        # Validate: ensure not exceeding total agent count
         if agents_per_hour_min > num_entities:
-            logger.warning(f"agents_per_hour_min ({agents_per_hour_min}) 超过总Agent数 ({num_entities})，已修正")
+            logger.warning(f"agents_per_hour_min ({agents_per_hour_min}) exceeds total agents ({num_entities}), correcting")
             agents_per_hour_min = max(1, num_entities // 10)
-        
+
         if agents_per_hour_max > num_entities:
-            logger.warning(f"agents_per_hour_max ({agents_per_hour_max}) 超过总Agent数 ({num_entities})，已修正")
+            logger.warning(f"agents_per_hour_max ({agents_per_hour_max}) exceeds total agents ({num_entities}), correcting")
             agents_per_hour_max = max(agents_per_hour_min + 1, num_entities // 2)
-        
-        # 确保 min < max
+
+        # Ensure min < max
         if agents_per_hour_min >= agents_per_hour_max:
             agents_per_hour_min = max(1, agents_per_hour_max // 2)
-            logger.warning(f"agents_per_hour_min >= max，已修正为 {agents_per_hour_min}")
-        
+            logger.warning(f"agents_per_hour_min >= max, corrected to {agents_per_hour_min}")
+
         return TimeSimulationConfig(
-            total_simulation_hours=result.get("total_simulation_hours", 72),
-            minutes_per_round=result.get("minutes_per_round", 60),  # 默认每轮1小时
+            total_simulation_hours=result.get("total_simulation_hours", 672),
+            minutes_per_round=result.get("minutes_per_round", 360),
             agents_per_hour_min=agents_per_hour_min,
             agents_per_hour_max=agents_per_hour_max,
-            peak_hours=result.get("peak_hours", [19, 20, 21, 22]),
-            off_peak_hours=result.get("off_peak_hours", [0, 1, 2, 3, 4, 5]),
-            off_peak_activity_multiplier=0.05,  # 凌晨几乎无人
-            morning_hours=result.get("morning_hours", [6, 7, 8]),
-            morning_activity_multiplier=0.4,
-            work_hours=result.get("work_hours", list(range(9, 19))),
-            work_activity_multiplier=0.7,
-            peak_activity_multiplier=1.5
+            peak_hours=result.get("peak_hours", [18, 19, 20, 21, 22]),
+            off_peak_hours=result.get("off_peak_hours", [2, 3, 4, 5, 6]),
+            off_peak_activity_multiplier=0.05,
+            morning_hours=result.get("morning_hours", [7, 8]),
+            morning_activity_multiplier=0.15,
+            work_hours=result.get("work_hours", list(range(9, 18))),
+            work_activity_multiplier=0.30,
+            peak_activity_multiplier=1.0,
+            night_hours=result.get("night_hours", [23, 0, 1]),
+            night_activity_multiplier=0.60,
+            transition_hours=result.get("transition_hours", [16, 17]),
+            transition_activity_multiplier=0.50,
         )
     
     def _generate_event_config(

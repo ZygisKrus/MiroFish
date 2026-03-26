@@ -154,19 +154,195 @@
 
 # 2. Social Graph & Dynamics (Grounding VU FF)
 
-## Gyvenimas tarp Saulėtekio ir Kamčiatkos
-Life in Saulėtekis is a delicate balance between the brutalist architecture of the Physics Faculty (FF) and the chaotic energy of the dormitories. The **"Kamčiatka" (Kampos)** and **"Niujorkas"** dorms are the social hubs where the true decisions are made. 
+## Gyvenimas tarp Sauletekio ir Kamciatkos
+Life in Sauletekis is a delicate balance between the brutalist architecture of the Physics Faculty (FF) and the chaotic energy of the dormitories. The **"Kamciatka" (Kampos)** and **"Niujorkas"** dorms are the social hubs where the true decisions are made.
 
-The **Physics "Swarm"** is currently obsessed with the legend of **Prof. Vičas**, whose Calculus exams are the primary filter for first-year survival. If you haven't cried in the 'Didžioji Fizikos Auditorija', you aren't a real VU physicist yet.
+The **Physics "Swarm"** is currently obsessed with the legend of **Prof. Vicas**, whose Calculus exams are the primary filter for first-year survival. If you haven't cried in the 'Didzioji Fizikos Auditorija', you aren't a real VU physicist yet.
 
 ## The Economic Friction
-The average student budget is calculated in **"Jammi Kebabs"**. A standard kebab costs around €5-6. When **Fizkonspektas** launched at **€9.99/mo**, the immediate reaction was: *"That's two kebabs. Is an AI tutor worth two Jammi runs?"* This price point has created a rift:
-- **The Academic Purists** (like Rūta Meilutytė) believe the app is a shortcut to a 'skola' later in life.
-- **The Social Survivors** (led by Mantas Kalnietis and Viltė Kazlauskaitė) are already mapping out 'cliques' to share account costs.
+The average student budget is calculated in **"Jammi Kebabs"**. A standard kebab costs around 5-6 EUR. When **Fizkonspektas** launched at **9.99 EUR/mo**, the immediate reaction was: *"That's two kebabs. Is an AI tutor worth two Jammi runs?"* This price point has created a rift:
+- **The Academic Purists** (like Ruta Meilutyte) believe the app is a shortcut to a 'skola' later in life.
+- **The Social Survivors** (led by Mantas Kalnietis and Vilte Kazlauskaite) are already mapping out 'cliques' to share account costs.
 
 ## Tribal Rituals
 - **FiDi (Fiziko Diena):** The most important day of the year. If the app can help students pass their labs before FiDi so they can actually party, it wins.
-- **Laborai (Labs):** The primary source of 'ataskaitos' (reports). The app's KaTeX renderer is a major draw here, as manually typing formulas in LaTeX is the #1 cause of sleep deprivation in Saulėtekis.
+- **Laborai (Labs):** The primary source of 'ataskaitos' (reports). The app's KaTeX renderer is a major draw here, as manually typing formulas in LaTeX is the #1 cause of sleep deprivation in Sauletekis.
+
+---
+
+# 2b. Explicit Social Graph (Relationship Layers)
+
+## DORM CLUSTERS (Daily contact, highest influence, trust_weight: 0.7-0.95)
+
+### Kamciatka Floor 3 (1st years)
+- Simas Urbonas, Giedre Labuckaite, Deividas Sirvydis, Gabija Petraityte, Tadas Mickevičius, Dovydas Stankevičius
+- Cluster dynamic: Simas is the informal leader, Giedre studies quietly, Tadas never leaves his room
+
+### Kamciatka Floor 5 (2nd years)
+- Paulius Jankūnas, Vaida Žitkutė, Arnas Butkevičius, Lukas Uleckas, Karolis Stasiulis, Egle Savickaite
+- Cluster dynamic: Vaida organizes everything social, Paulius is cramming constantly
+
+### Kamciatka Floor 7 (3rd years)
+- Egle Šventickiene, Rokas Giedraitis, Arturas Milaknis, Marek Blaževič, Dominykas Kavaliauskas, Laurynas Mickus
+- Cluster dynamic: Egle is the "mother" of the floor, Marek is loud but secretly studies
+
+### Kamciatka Floor 9 (4th years + mixed)
+- Mantas Kalnietis, Linas Kleiza, Mindaugas Kuzminskas, Renaldas Seibutis, Eimantas Bendžius, Gytis Radzevičius
+- Cluster dynamic: Mantas organizes group buys, Linas has a job and less time
+
+### Niujorkas Floor 2 (1st years)
+- Jonas Valanciunas, Domantas Sabonis, Ieva Mickevičiute, Gabija Paulauskaite, Augustas Mickevičius, Urte Stankevičiute
+- Cluster dynamic: Jonas is quietly brilliant, Domantas feels family pressure
+
+### Niujorkas Floor 4 (2nd years)
+- Liepa Martinaityte, Nojus Stankevičius, Martynas Echodas, Tomas Žilinskas, Simona Kazlauskaite, Amelija Balciunaite
+- Cluster dynamic: Liepa is the library ghost, Martynas is afraid of everything
+
+### Niujorkas Floor 6 (3rd years)
+- Kamile Nacickaite, Austeja Kazlauskaite, Justas Vaiciulis, Rokas Adomaitis, Gabriele Kazlauskaite, Emilija Balciunaite
+- Cluster dynamic: Kamile is a lone wolf, Austeja runs study sessions for others
+
+### Niujorkas Floor 8 (4th years + mixed)
+- Lukas Kazlauskas, Ieva Balciunaite, Greta Verbaite, Smilte Adomavičiute, Jonas Vaiciulis, Elena Kazlauskaite
+- Cluster dynamic: Lukas needs thesis help, Greta is anxious about defense
+
+## STUDY GROUPS (Weekly meetings, academic influence, trust_weight: 0.5-0.8)
+
+### SG-1: "Vicas Survivors" (1st year Calculus/Mechanics)
+- Simas Urbonas, Jonas Valanciunas, Domantas Sabonis, Gabija Paulauskaite, Ieva Mickevičiute, Austeja Butkute, Laurynas Birutis, Andrius Butkevičius
+- Focus: Surviving Prof. Vicas's Calculus I, Mechanics problems
+- Meeting: Library 2nd floor, Tuesdays 17:00
+
+### SG-2: "E&M Grinders" (2nd year Electrodynamics prep)
+- Paulius Jankūnas, Arnas Butkevičius, Vaida Žitkutė, Lukas Uleckas, Liepa Martinaityte, Tomas Žilinskas, Martynas Kazlauskas, Karolis Stasiulis
+- Focus: Electrodynamics problem sets, lab reports
+- Meeting: Kamciatka common room, Thursdays 18:00
+
+### SG-3: "Quantum Crew" (3rd year QM + StatPhys)
+- Egle Šventickiene, Kamile Nacickaite, Arturas Milaknis, Austeja Kazlauskaite, Rokas Adomaitis, Matas Urbonas, Justas Vaiciulis, Dominykas Kavaliauskas
+- Focus: Quantum Mechanics, Statistical Physics
+- Meeting: Physics Faculty room 312, Wednesdays 16:00
+
+### SG-4: "Thesis Panic" (4th year thesis support)
+- Lukas Kazlauskas, Linas Kleiza, Mantas Petrauskas, Ieva Balciunaite, Laura Balciunaite, Greta Verbaite, Elena Stankevičiute, Smilte Adomavičiute
+- Focus: Thesis writing, defense prep, supervisor issues
+- Meeting: Online (Zoom), Fridays 15:00
+
+### SG-5: "Cross-Faculty Hustlers" (Economics students who take physics)
+- Saule Petraitiene, Vytautas Kairys, Greta Žukaite, Dominykas Balciunas, Vilte Kazlauskaite, Rugile Kavaliauskaite, Austeja Rimkute
+- Focus: Passing physics requirements, sharing resources
+- Meeting: Economics faculty cafe, Mondays 12:00
+
+## LECTURE COHORTS (Weak ties, awareness spreading, trust_weight: 0.2-0.4)
+
+### Year 1 Cohort (~50 students)
+All 1st year Physics students share Mechanics, Calculus I, and General Physics lectures in Didzioji Fizikos Auditorija. They see each other daily but don't all interact deeply.
+
+### Year 2 Cohort (~45 students)
+All 2nd year Physics students share E&M, Advanced Math II lectures. Smaller group, more familiar with each other.
+
+### Year 3 Cohort (~40 students)
+All 3rd year Physics students share QM, Electrodynamics, StatPhys. Tight-knit, everyone knows everyone.
+
+### Year 4 Cohort (~30 students)
+Mostly working independently on thesis. See each other at seminars and defense presentations.
+
+## SOCIAL CIRCLES (Cross-year bridges, trust_weight: 0.3-0.6)
+
+### "Snekutis Regulars" (Bar crowd, cross-year)
+- Mindaugas Kuzminskas (4th), Mantas Kalnietis (4th), Vaida Žitkutė (2nd), Kristupas Žemaitis (2nd), Marek Blaževič (3rd), Tyler Cavanaugh (2nd, Erasmus)
+- These are the social connectors who bridge year groups over beer
+
+### "FiDi Organizers" (Event committee, cross-year)
+- Juste Jocyte (1st), Tomas Dimša (1st), Karolina Stankevičiute (3rd), Dovydas Rimkus (Law 3rd), Greta Stasiulyte (Comm 2nd)
+- High social influence, know everyone, organize the biggest event of the year
+
+### "Lab Rats" (Experimental physics enthusiasts, cross-year)
+- Rokas Giedraitis (3rd), Martynas Adomaitis (2nd), Erikas Paulauskas (1st), Gabija Vasiliauskas (4th), Justas Petrauskas (2nd)
+- Spend all day in the lab, share equipment and techniques
+
+### "Basketball Court" (Sports group, cross-faculty)
+- Ignas Brazdeikis (2nd), Margiris Normantas (3rd), Mantas Butkus (Law 2nd), Benas Urbonas (Law 4th), Vytautas Mickus (Econ 1st)
+- Meet at Sauletekis gym, cross-faculty social bridge
+
+---
+
+# 2c. Per-Agent Behavioral Parameters
+
+## Agent Parameter Schema
+Each agent in the simulation carries these behavioral parameters:
+
+```
+budget_monthly_eur: int (400-800)         # Monthly budget range
+design_preference: str                     # "minimalist" | "traditional" | "premium"
+exam_stress_level: int (1-10)             # Current stress about exams
+social_influence_radius: int (1-5)        # How many people they actively influence
+decision_triggers: list[str]              # Ordered: what makes them try/buy the product
+product_awareness_state: str              # unaware -> heard_of -> visited -> tried_trial -> paid -> churned -> shared_account
+```
+
+## Behavioral Archetypes (mapped to personas)
+
+### Archetype: "Panic Buyer" (35% of students)
+- decision_triggers: [exam_panic, peer_recommendation, ad_exposure]
+- price_sensitivity: LOW during exam week, HIGH otherwise
+- Typical: Simas Urbonas, Andrius Butkevičius, Austeja Butkute, Gabija Paulauskaite
+- Budget: 400-550 EUR/mo, design_preference: "traditional"
+
+### Archetype: "Social Optimizer" (20% of students)
+- decision_triggers: [peer_recommendation, account_sharing_opportunity, fomo]
+- Always looking for group buys, splits, and deals
+- Typical: Mantas Kalnietis, Vilte Kazlauskaite, Vaida Žitkutė, Dominykas Balciunas, Vytautas Kairys
+- Budget: 450-650 EUR/mo, design_preference: varies
+
+### Archetype: "Quality Seeker" (15% of students)
+- decision_triggers: [content_quality_discovery, ai_assistant_test, peer_recommendation]
+- Will pay full price if quality is proven. Needs to see real value.
+- Typical: Gabija Vaitkutė, Linas Kleiza, Jonas Valanciunas, Laura Balciunaite
+- Budget: 500-800 EUR/mo, design_preference: "minimalist"
+
+### Archetype: "Skeptic / Resister" (15% of students)
+- decision_triggers: [extreme_exam_desperation, overwhelming_social_proof]
+- Actively argues against the product. May eventually convert under extreme pressure.
+- Typical: Ruta Meilutyte, Tomas Pacesas, Mantas Petrauskas, Gintare Petronyte
+- Budget: varies, design_preference: "traditional"
+
+### Archetype: "Tech Enthusiast" (10% of students)
+- decision_triggers: [curiosity, ai_assistant_test, product_feature_discovery]
+- Early adopters. Will try anything tech. Spread word quickly.
+- Typical: Arnas Velicka, Ignas Petrauskas, Tomas Jankaitis, Kajus Petrauskas, Augustas Mickevičius
+- Budget: 500-700 EUR/mo, design_preference: "minimalist"
+
+### Archetype: "Passive Observer" (5% of students)
+- decision_triggers: [overwhelming_social_proof, direct_personal_recommendation]
+- Won't seek out the product. Only converts if literally everyone around them uses it.
+- Typical: Tadas Sedekerskis, Emilija Stankevičiute, Simona Vaiciulyte
+- Budget: 400-600 EUR/mo, design_preference: "premium"
+
+---
+
+# 2d. Economic Behavior Model
+
+## Budget Calculation Framework
+Students reason about Fizkonspektas cost in terms of familiar purchases:
+- 9.99 EUR/month subscription = 2 Jammi kebabs
+- 5.99 EUR single course = 1 Jammi kebab + drink
+- Lifetime all-access = ~10 kebabs (unknown exact price)
+- Retaking a failed course = ~200 EUR + 6 months delay
+
+## Account Sharing Dynamics
+- Groups of 3-5 students will attempt to share one login
+- Organizer (usually "Social Optimizer" archetype) collects 2-3 EUR from each
+- Risk: Fizkonspektas tracks per-user via email, shared accounts may get flagged
+- Sharing clusters align with dorm clusters and study groups
+
+## Payment Decision Tree
+1. Am I failing? -> HIGH urgency, LOW price sensitivity
+2. Is there a free trial? -> Try it, decide later
+3. Can I split the cost? -> Ask dorm cluster / study group
+4. Is 5.99 EUR one-time worth it for just this one exam? -> Often YES
+5. Is 9.99 EUR/month worth it long-term? -> Usually NO unless in exam period
+6. The "sunk cost" progression: tried 3 quiz questions -> feel invested -> more likely to pay
 
 # 3. Simulated Chat Logs & Strategic Conflicts
 

@@ -111,47 +111,72 @@ B. **具体类型（8个，根据文本内容设计）**：
 - **注意**：属性名不能使用 `name`、`uuid`、`group_id`、`created_at`、`summary`（这些是系统保留字）
 - 推荐使用：`full_name`, `title`, `role`, `position`, `location`, `description` 等
 
-## 实体类型参考
+## Entity Type Reference
 
-**个人类（具体）**：
-- Student: 学生
-- Professor: 教授/学者
-- Journalist: 记者
-- Celebrity: 明星/网红
-- Executive: 高管
-- Official: 政府官员
-- Lawyer: 律师
-- Doctor: 医生
+**Individual types (specific)**:
+- Student: University student
+- Professor: Professor/academic
+- Journalist: Reporter
+- Celebrity: Public figure / influencer
+- Executive: Corporate executive
+- Official: Government official
 
-**个人类（兜底）**：
-- Person: 任何自然人（不属于上述具体类型时使用）
+**Individual types (fallback)**:
+- Person: Any individual (when no specific type matches)
 
-**组织类（具体）**：
-- University: 高校
-- Company: 公司企业
-- GovernmentAgency: 政府机构
-- MediaOutlet: 媒体机构
-- Hospital: 医院
-- School: 中小学
-- NGO: 非政府组织
+**Organization types (specific)**:
+- University: Higher education institution
+- Company: Business / startup
+- GovernmentAgency: Government body
+- MediaOutlet: Media organization
+- NGO: Non-governmental organization
 
-**组织类（兜底）**：
-- Organization: 任何组织机构（不属于上述具体类型时使用）
+**Organization types (fallback)**:
+- Organization: Any organization (when no specific type matches)
 
-## 关系类型参考
+**Location/Social types (for student simulation)**:
+- DormFloor: A specific floor in a student dormitory (e.g., Kamciatka Floor 3)
+- StudyGroup: A group of students who study together regularly
+- LectureCohort: All students sharing a lecture course in a given year
+- SocialCircle: Cross-year social group (bar regulars, sports teams, event organizers)
 
-- WORKS_FOR: 工作于
-- STUDIES_AT: 就读于
-- AFFILIATED_WITH: 隶属于
-- REPRESENTS: 代表
-- REGULATES: 监管
-- REPORTS_ON: 报道
-- COMMENTS_ON: 评论
-- RESPONDS_TO: 回应
-- SUPPORTS: 支持
-- OPPOSES: 反对
-- COLLABORATES_WITH: 合作
-- COMPETES_WITH: 竞争
+**Product/Marketing types**:
+- MarketingChannel: A channel for reaching students (Instagram, stickers, ambassadors)
+- DesignVariant: A specific UI/design version of the product being tested
+- ProductFeature: A specific feature of the product (AI assistant, notes, quizzes)
+
+## Relationship Type Reference
+
+- WORKS_FOR: Employed by
+- STUDIES_AT: Enrolled at
+- AFFILIATED_WITH: Affiliated with
+- REPRESENTS: Represents
+- REGULATES: Regulates
+- REPORTS_ON: Reports on
+- COMMENTS_ON: Comments on
+- RESPONDS_TO: Responds to
+- SUPPORTS: Supports
+- OPPOSES: Opposes
+- COLLABORATES_WITH: Collaborates with
+- COMPETES_WITH: Competes with
+- ROOMMATE_OF: Lives on the same dorm floor (daily contact, high influence)
+- STUDIES_WITH: Part of the same study group (weekly contact, academic influence)
+- INFLUENCED_BY: Social influence relationship (trust-weighted)
+- SAW_AD_ON: Was exposed to marketing on a specific channel
+- SHARES_ACCOUNT_WITH: Shares a product account (economic relationship)
+- MEMBER_OF: Member of a social circle or study group
+- RECOMMENDED_TO: Recommended the product to another person
+
+## Event Type Reference (for simulation tracking)
+
+- TRIAL_STARTED: Student started a free trial
+- TRIAL_EXPIRED: Free trial period ended
+- CONVERTED: Student became a paying customer
+- CHURNED: Student cancelled their subscription
+- SHARED_ACCOUNT: Student joined an account-sharing group
+- RECOMMENDED_TO: Student recommended the product to peers
+- AD_EXPOSED: Student was exposed to marketing material
+- VISITED_WEBSITE: Student visited the product website
 """
 
 

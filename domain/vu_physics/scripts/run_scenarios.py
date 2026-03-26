@@ -1,47 +1,142 @@
+"""
+Fizkonspektas Launch Simulation - Two-Phase Scenario Runner
+
+Phase 1: Test 9 combinations of Marketing x Pricing x Emphasis (with current design D1)
+Phase 2: Test top 3 winners from Phase 1 x 3 Design variants (9 more scenarios)
+
+Total: Up to 18 scenarios, each running 28 simulated days (112 rounds at 4 rounds/day).
+"""
+
 import requests
 import json
 import time
 import os
 import argparse
+from datetime import datetime
 
 BASE_URL = "http://127.0.0.1:5001/api"
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 SEED_FILE = os.path.abspath(os.path.join(SCRIPT_DIR, "../seeds/refined_mega_seed.md"))
+RESULTS_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "../results"))
+
+# ============================================================
+# SCENARIO DEFINITIONS
+# ============================================================
+
+# Marketing channel strategies
+MARKETING = {
+    "M1": "Guerrilla stickers: QR codes on dorm doors (Kamciatka, Niujorkas), lecture halls, bathrooms. Slogans: 'Failing Quantum Mechanics? Scan this.'",
+    "M2": "Instagram targeted ads: VU Physics hashtags, exam stress content, showing AI assistant solving electrodynamics problems.",
+    "M3": "Peer ambassador program: 1 free account per study group, ambassadors spread the word organically through dorm clusters and study sessions.",
+    "M4": "Combined: All channels simultaneously (stickers + Instagram ads + peer ambassadors). Maximum reach.",
+}
+
+# Pricing strategies
+PRICING = {
+    "P1": "Current pricing: 5.99 EUR one-time per course OR 9.99 EUR/month subscription with 7-day free trial OR lifetime all-access.",
+    "P2": "Lower barrier: 4.99 EUR/month subscription only (no per-course option). 7-day free trial. Simplified decision.",
+    "P3": "Freemium model: Basic notes visible for free. AI assistant, problem sets, and advanced derivations require Premium (9.99 EUR/month).",
+}
+
+# Product emphasis / positioning
+EMPHASIS = {
+    "E1": "Notes-first: '120,000 lines of university-level content. Every derivation, step by step.' Highlight content depth and quality.",
+    "E2": "AI-tutor-first: 'Your personal physics tutor, available 24/7. Ask anything, get real answers.' Highlight GPT-4 AI assistant.",
+    "E3": "Exam-prep-first: 'Pass your exam in 24 hours. Everything you need, nothing you don't.' Highlight urgency and exam survival.",
+}
+
+# Design variants (Phase 2 only)
+DESIGNS = {
+    "D1": "Current 'Anti-Halation Brutalism': Black/white (#0D0D0D/#F4F4F4), JetBrains Mono, zero border-radius, hard shadows. Industrial/hacker aesthetic.",
+    "D2": "'Clean Academic': White background, serif headers (Georgia), blue accents (#2563EB), rounded corners. Notion/Coursera feel. Traditional educational look.",
+    "D3": "'Glassmorphism Premium': Frosted glass cards, gradient backgrounds, smooth animations, rounded corners. Apple-style luxury feel.",
+}
+
+# Phase 1: 9 scenarios (Marketing x Pricing x Emphasis, all with design D1)
+PHASE_1_SCENARIOS = [
+    {"id": "S1", "marketing": "M1", "pricing": "P1", "emphasis": "E1", "design": "D1",
+     "name": "Baseline: Stickers + Current Price + Notes"},
+    {"id": "S2", "marketing": "M2", "pricing": "P1", "emphasis": "E3", "design": "D1",
+     "name": "Instagram Panic: Ads + Current Price + Exam-Prep"},
+    {"id": "S3", "marketing": "M3", "pricing": "P1", "emphasis": "E2", "design": "D1",
+     "name": "Peer Trust: Ambassadors + Current Price + AI Tutor"},
+    {"id": "S4", "marketing": "M4", "pricing": "P2", "emphasis": "E3", "design": "D1",
+     "name": "Full Push Cheap: Combined + Lower Price + Exam-Prep"},
+    {"id": "S5", "marketing": "M1", "pricing": "P3", "emphasis": "E1", "design": "D1",
+     "name": "Free Hook: Stickers + Freemium + Notes"},
+    {"id": "S6", "marketing": "M2", "pricing": "P3", "emphasis": "E2", "design": "D1",
+     "name": "Viral Free: Instagram + Freemium + AI Tutor"},
+    {"id": "S7", "marketing": "M3", "pricing": "P2", "emphasis": "E1", "design": "D1",
+     "name": "Peer Affordable: Ambassadors + Lower Price + Notes"},
+    {"id": "S8", "marketing": "M4", "pricing": "P1", "emphasis": "E2", "design": "D1",
+     "name": "Premium AI Push: Combined + Current Price + AI Tutor"},
+    {"id": "S9", "marketing": "M1", "pricing": "P2", "emphasis": "E3", "design": "D1",
+     "name": "Cheap Panic: Stickers + Lower Price + Exam-Prep"},
+]
+
+# Academic calendar setting for all scenarios
+ACADEMIC_CONTEXT = "mid"  # Start mid-semester, building toward midterms
 
 
-def run_scenario(scenario_name, marketing_strategy, requirement_keyword, rounds=3):
-    print(f"\n{'='*50}")
-    print(f">>> STARTING SCENARIO: {scenario_name}")
-    print(f"{'='*50}")
+def build_scenario_requirement(scenario):
+    """Build the simulation requirement string for a scenario"""
+    m = MARKETING[scenario["marketing"]]
+    p = PRICING[scenario["pricing"]]
+    e = EMPHASIS[scenario["emphasis"]]
+    d = DESIGNS[scenario["design"]]
+
+    return (
+        f"Simulate the launch of Fizkonspektas at VU Physics Faculty (Sauletekis campus). "
+        f"This is scenario {scenario['id']}: '{scenario['name']}'. "
+        f"\n\nMARKETING STRATEGY ({scenario['marketing']}): {m} "
+        f"\n\nPRICING MODEL ({scenario['pricing']}): {p} "
+        f"\n\nPRODUCT EMPHASIS ({scenario['emphasis']}): {e} "
+        f"\n\nDESIGN VARIANT ({scenario['design']}): {d} "
+        f"\n\nACADEMIC CONTEXT: Simulation starts mid-semester, building toward midterm exams. "
+        f"Week 1-2: Normal semester. Week 3: Pre-exam stress rises. Week 4: Exam week (sesija). "
+        f"\n\nKEY METRICS TO TRACK: awareness_pct, trial_signups, conversion_rate, total_revenue_eur, "
+        f"churn_rate, account_sharing_incidents, net_promoter_score, design_bounce_rate. "
+        f"\n\nAGENT BEHAVIOR: Students must reason about price in terms of 'Jammi kebabs' "
+        f"(9.99 EUR = 2 kebabs). They should consider group buys, free trial timing relative to exams, "
+        f"and social proof from dorm clusters and study groups."
+    )
+
+
+def run_scenario(scenario, rounds, academic_start="mid"):
+    """Run a single scenario through the full simulation pipeline"""
+    scenario_id = scenario["id"]
+    scenario_name = scenario["name"]
+
+    print(f"\n{'='*60}")
+    print(f">>> SCENARIO {scenario_id}: {scenario_name}")
+    print(f">>> Marketing: {scenario['marketing']} | Pricing: {scenario['pricing']} | Emphasis: {scenario['emphasis']} | Design: {scenario['design']}")
+    print(f"{'='*60}")
 
     if not os.path.exists(SEED_FILE):
         print(f"ERROR: {SEED_FILE} not found.")
-        return
+        return None
 
-    # 1. Generate Ontology (Step 1)
-    # We still do this to create the PROJECT, even if we reuse the graph
-    print("\n[Step 1] Generating Ontology from Seed Document...")
-
-    simulation_requirement = (
-        f"Simulate the launch of the Fizkonspektas platform at the Vilnius University (VU) "
-        f"Physics Faculty. This is {scenario_name}. "
-        f"MARKETING STRATEGY: {marketing_strategy}. "
-        f"The simulation must focus on how students react to this specific strategy ({requirement_keyword})."
-    )
+    # Build requirement
+    simulation_requirement = build_scenario_requirement(scenario)
 
     additional_context = (
-        "CRITICAL: The simulation takes place in Lithuania. All generated personas must act and speak "
-        "like Lithuanian university students, specifically from the VU Physics Faculty. "
-        "Ensure entity types like 'PhysicsStudent', 'Professor', 'DormitoryCommunity', and 'TechCompany' are created. "
-        "Personas should mention local concepts like 'Saulėtekis', 'Kamčiatka', exams ('koliokviumai'), "
-        "and specific difficult subjects like 'Kvantinė mechanika' or 'Aukštoji matematika'."
+        "CRITICAL: This simulation takes place in Lithuania, at Vilnius University Physics Faculty. "
+        "All agents must behave like Lithuanian university students. "
+        "Use Lithuanian timezone (Europe/Vilnius). "
+        "Platforms: Instagram, Telegram, Facebook groups, physical word-of-mouth, direct website visits. "
+        "NOT Twitter or Reddit. "
+        "Entity types must include: PhysicsStudent, Professor, DormFloor, StudyGroup, LectureCohort, MarketingChannel. "
+        "Relationships must include: roommate_of, studies_with, influenced_by, saw_ad_on, shares_account_with. "
+        f"Academic calendar: Start at '{academic_start}' point in semester."
     )
 
+    # Step 1: Generate Ontology
+    print("\n[Step 1] Generating Ontology...")
     with open(SEED_FILE, "rb") as f:
         files = {'files': (os.path.basename(SEED_FILE), f, 'text/markdown')}
         data = {
             'simulation_requirement': simulation_requirement,
-            'project_name': f'Fizkonspektas - {scenario_name}',
+            'project_name': f'Fizkonspektas - {scenario_id} - {scenario_name}',
             'additional_context': additional_context
         }
         response = requests.post(f"{BASE_URL}/graph/ontology/generate", files=files, data=data)
@@ -52,162 +147,229 @@ def run_scenario(scenario_name, marketing_strategy, requirement_keyword, rounds=
 
     res_data = response.json()
     project_id = res_data['data']['project_id']
-    print(f"SUCCESS: Project Created ID={project_id}")
+    print(f"OK: Project ID={project_id}")
 
-    # 2. Build Knowledge Graph (optional — falls back to local seed if Zep graph API unavailable)
-    print("\n[Step 2] Building Knowledge Graph in Zep (optional)...")
-    graph_id = "local_seed_fallback"  # Default: use local seed file if graph build fails
-
+    # Step 2: Build Knowledge Graph
+    print("\n[Step 2] Building Knowledge Graph...")
+    graph_id = "local_seed_fallback"
     response = requests.post(f"{BASE_URL}/graph/build", json={"project_id": project_id})
     if response.status_code == 200:
         task_id = response.json()['data']['task_id']
-        print(f"Graph build task started: task_id={task_id}")
-
-        # 3. Poll until graph build completes (up to 5 minutes)
-        print("\n[Step 3] Waiting for graph build to complete...")
         for _ in range(60):
             r = requests.get(f"{BASE_URL}/graph/task/{task_id}")
             task = r.json()
             status = task.get('status', 'unknown')
-            progress = task.get('progress', 0)
-            print(f"  Graph build: {status} ({progress}%) — {task.get('message', '')}")
             if status == 'completed':
                 built_id = task.get('result', {}).get('graph_id')
                 if built_id:
                     graph_id = built_id
-                    node_count = task.get('result', {}).get('node_count', 0)
-                    edge_count = task.get('result', {}).get('edge_count', 0)
-                    print(f"SUCCESS: Graph built — graph_id={graph_id}, nodes={node_count}, edges={edge_count}")
+                print(f"OK: Graph built - {graph_id}")
                 break
             elif status == 'failed':
-                print(f"⚠ Graph build failed ({task.get('message', '')}), using local seed fallback")
+                print(f"WARN: Graph build failed, using local seed fallback")
                 break
             time.sleep(5)
-        else:
-            print("⚠ Graph build timed out, using local seed fallback")
-    else:
-        print(f"⚠ Graph build unavailable ({response.status_code}), using local seed fallback")
 
-    print(f"Using graph_id={graph_id}")
-
-    # 4. Create Simulation
-    print("\n[Step 4] Creating Simulation...")
+    # Step 3: Create Simulation (with new platform flags)
+    print("\n[Step 3] Creating Simulation...")
     data = {
         "project_id": project_id,
         "graph_id": graph_id,
-        "enable_twitter": True,
-        "enable_reddit": True
+        "enable_instagram": True,
+        "enable_telegram": True,
+        "enable_facebook": True,
+        "enable_physical": True,
+        "enable_website": True,
     }
     response = requests.post(f"{BASE_URL}/simulation/create", json=data)
     if response.status_code != 200:
-        print(f"FAILED Step 4: {response.text}")
+        print(f"FAILED Step 3: {response.text}")
         return None
     simulation_id = response.json()['data']['simulation_id']
-    print(f"SUCCESS: Simulation Created ID={simulation_id}")
+    print(f"OK: Simulation ID={simulation_id}")
 
-    # 5. Prepare Simulation
-    print(f"\n[Step 5] Preparing Simulation (Persona Generation - Will limit based on mode)...")
+    # Step 4: Prepare Simulation
+    print("\n[Step 4] Preparing Simulation (profile generation)...")
     data = {"simulation_id": simulation_id}
     response = requests.post(f"{BASE_URL}/simulation/prepare", json=data)
     if response.status_code != 200:
-        print(f"FAILED Step 5: {response.text}")
+        print(f"FAILED Step 4: {response.text}")
         return None
 
-    print("Waiting for preparation...")
     for _ in range(150):
         response = requests.post(f"{BASE_URL}/simulation/prepare/status", json=data)
         if response.status_code != 200:
-            print(f"FAILED to check prep status: {response.text}")
             return None
         status_data = response.json().get('data', {})
         status = status_data.get('status', 'unknown')
-        print(f"Current Status: {status} ({status_data.get('progress', 0)}%)")
+        print(f"  Prep: {status} ({status_data.get('progress', 0)}%)")
         if status == 'ready':
-            print("SUCCESS: Simulation Ready")
             break
         elif status == 'failed':
-            print(f"FAILED Preparation: {status_data.get('error')}")
+            print(f"FAILED: {status_data.get('error')}")
             return None
         time.sleep(10)
     else:
-        print("TIMED OUT waiting for preparation")
+        print("TIMED OUT")
         return None
 
-    # 6. Start Simulation
-    print(f"\n[Step 6] Starting Simulation ({rounds} rounds)...")
+    # Step 5: Start Simulation
+    print(f"\n[Step 5] Starting Simulation ({rounds} rounds, ~{rounds // 4} days)...")
     data = {
         "simulation_id": simulation_id,
         "max_rounds": rounds,
-        "enable_graph_memory_update": False, # Disabled for long runs to avoid Zep overhead
+        "enable_graph_memory_update": False,
         "graph_id": graph_id
     }
     response = requests.post(f"{BASE_URL}/simulation/start", json=data)
     if response.status_code != 200:
-        print(f"FAILED Step 6: {response.text}")
+        print(f"FAILED Step 5: {response.text}")
         return None
-    print(f"SUCCESS: Simulation Started")
 
-    # 7. Poll status
-    print("\n[Step 7] Polling Simulation Status...")
-    for _ in range(480):
+    # Step 6: Poll until complete
+    print("\n[Step 6] Running simulation...")
+    for _ in range(960):  # Up to 4 hours for long simulations
         response = requests.get(f"{BASE_URL}/simulation/{simulation_id}/run-status")
         status_data = response.json().get('data', {})
         total_rnd = status_data.get('total_rounds', rounds)
-        print(f"Status: {status_data.get('runner_status')}, Round: {status_data.get('current_round', 0)}/{total_rnd}")
+        current = status_data.get('current_round', 0)
+        day = (current // 4) + 1 if current > 0 else 0
+        print(f"  Round {current}/{total_rnd} (Day {day}) - {status_data.get('runner_status')}")
         if status_data.get('runner_status') in ['completed', 'failed']:
             break
         time.sleep(15)
 
-    print(f"\n--- SCENARIO {scenario_name} COMPLETED ---")
+    # Save scenario metadata
+    os.makedirs(RESULTS_DIR, exist_ok=True)
+    meta = {
+        "scenario": scenario,
+        "simulation_id": simulation_id,
+        "project_id": project_id,
+        "graph_id": graph_id,
+        "rounds": rounds,
+        "academic_start": academic_start,
+        "completed_at": datetime.now().isoformat(),
+    }
+    meta_path = os.path.join(RESULTS_DIR, f"{scenario_id}_meta.json")
+    with open(meta_path, "w") as f:
+        json.dump(meta, f, indent=2)
+    print(f"Metadata saved to {meta_path}")
+
+    print(f"\n--- SCENARIO {scenario_id} COMPLETED ---")
     return simulation_id
 
+
+def run_phase_1(rounds, academic_start="mid"):
+    """Run all 9 Phase 1 scenarios"""
+    print("\n" + "=" * 70)
+    print("PHASE 1: Marketing x Pricing x Emphasis (9 scenarios, Design D1)")
+    print("=" * 70)
+
+    results = {}
+    for scenario in PHASE_1_SCENARIOS:
+        sim_id = run_scenario(scenario, rounds, academic_start)
+        if sim_id:
+            results[scenario["id"]] = sim_id
+            print(f"OK: {scenario['id']} -> {sim_id}")
+        else:
+            print(f"FAILED: {scenario['id']}")
+
+    # Save phase 1 results
+    os.makedirs(RESULTS_DIR, exist_ok=True)
+    results_path = os.path.join(RESULTS_DIR, "phase_1_results.json")
+    with open(results_path, "w") as f:
+        json.dump(results, f, indent=2)
+    print(f"\nPhase 1 results: {results_path}")
+    return results
+
+
+def run_phase_2(top_scenario_ids, rounds, academic_start="mid"):
+    """Run Phase 2: Top scenarios x 3 Design variants"""
+    print("\n" + "=" * 70)
+    print("PHASE 2: Top Scenarios x Design Variants (up to 9 scenarios)")
+    print("=" * 70)
+
+    # Build Phase 2 scenarios from top Phase 1 winners
+    phase_2_scenarios = []
+    for rank, sid in enumerate(top_scenario_ids[:3]):
+        # Find the original Phase 1 scenario
+        base = next((s for s in PHASE_1_SCENARIOS if s["id"] == sid), None)
+        if not base:
+            print(f"WARN: Scenario {sid} not found in Phase 1")
+            continue
+
+        for design_key in ["D1", "D2", "D3"]:
+            new_scenario = {
+                "id": f"P2-{base['id']}-{design_key}",
+                "marketing": base["marketing"],
+                "pricing": base["pricing"],
+                "emphasis": base["emphasis"],
+                "design": design_key,
+                "name": f"{base['name']} + {design_key}",
+            }
+            phase_2_scenarios.append(new_scenario)
+
+    results = {}
+    for scenario in phase_2_scenarios:
+        sim_id = run_scenario(scenario, rounds, academic_start)
+        if sim_id:
+            results[scenario["id"]] = sim_id
+
+    # Save phase 2 results
+    results_path = os.path.join(RESULTS_DIR, "phase_2_results.json")
+    with open(results_path, "w") as f:
+        json.dump(results, f, indent=2)
+    print(f"\nPhase 2 results: {results_path}")
+    return results
+
+
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--mode", type=str, default="TEST", choices=["TEST", "PROD"], help="TEST mode runs 2 rounds. PROD mode runs 200 rounds.")
+    parser = argparse.ArgumentParser(description="Fizkonspektas Launch Simulation Runner")
+    parser.add_argument("--mode", type=str, default="TEST", choices=["TEST", "PROD"],
+                        help="TEST: 8 rounds (2 days). PROD: 112 rounds (28 days).")
+    parser.add_argument("--phase", type=str, default="1", choices=["1", "2", "both"],
+                        help="Which phase to run. '2' requires phase_1_results.json.")
+    parser.add_argument("--academic-start", type=str, default="mid",
+                        choices=["early", "mid", "pre_exam", "exam"],
+                        help="Academic calendar start point.")
+    parser.add_argument("--top-scenarios", type=str, default=None,
+                        help="Comma-separated scenario IDs for Phase 2 (e.g., 'S4,S6,S8'). "
+                             "If not provided, reads from phase_1_results.json.")
     args = parser.parse_args()
 
-    rounds = 2 if args.mode == "TEST" else 200
+    rounds = 8 if args.mode == "TEST" else 112  # 2 days vs 28 days
 
-    print(f"Starting A/B/C Testing for Fizkonspektas Launch ({args.mode} MODE - {rounds} Rounds)")
+    print(f"\nFizkonspektas Launch Simulation ({args.mode} MODE)")
+    print(f"Rounds per scenario: {rounds} (~{rounds // 4} days)")
+    print(f"Academic start: {args.academic_start}")
 
-    # Run Scenario A
-    sim_a = run_scenario(
-        "Scenario A (The Crammer's Exploit)",
-        "€7.99/mo, 7-day free trial. Minimalist 'Rapid Cheatsheet' UI. Target: Desperate students cramming for exams who use personal Gmails and forget to cancel.",
-        "Scenario A",
-        rounds=rounds
-    )
-    if sim_a:
-        print(f"Simulation A ID: {sim_a}")
-    else:
-        print("FAILED: Scenario A failed.")
+    if args.phase in ["1", "both"]:
+        phase_1_results = run_phase_1(rounds, args.academic_start)
 
-    # Run Scenario B
-    sim_b = run_scenario(
-        "Scenario B (The Exclusive Drop)",
-        "€7.99/mo, no trial. Waitlist only. 'Used by Top 1% of VU Students'. Target: FOMO-driven students who want to feel elite.",
-        "Scenario B",
-        rounds=rounds
-    )
-    if sim_b:
-        print(f"Simulation B ID: {sim_b}")
-    else:
-        print("FAILED: Scenario B failed.")
+    if args.phase in ["2", "both"]:
+        # Determine top scenarios for Phase 2
+        if args.top_scenarios:
+            top_ids = [s.strip() for s in args.top_scenarios.split(",")]
+        else:
+            # Try to read from Phase 1 results
+            results_path = os.path.join(RESULTS_DIR, "phase_1_results.json")
+            if os.path.exists(results_path):
+                with open(results_path) as f:
+                    phase_1_data = json.load(f)
+                top_ids = list(phase_1_data.keys())[:3]
+                print(f"Using top 3 from Phase 1: {top_ids}")
+            else:
+                print("ERROR: No Phase 1 results found. Run Phase 1 first or provide --top-scenarios.")
+                return
 
-    # Run Scenario C
-    sim_c = run_scenario(
-        "Scenario C (The Peer Pressure Nudge)",
-        "Freemium model. Basic features free, but you see exactly who in your group has Premium. Target: Socially anxious students who don't want to fall behind their friends.",
-        "Scenario C",
-        rounds=rounds
-    )
-    if sim_c:
-        print(f"Simulation C ID: {sim_c}")
-    else:
-        print("FAILED: Scenario C failed.")
+        run_phase_2(top_ids, rounds, args.academic_start)
 
-    print("\n--- ALL SCENARIOS COMPLETED ---")
-    print("Run analyze_results.py to compare the simulations.")
+    print("\n" + "=" * 70)
+    print("ALL SCENARIOS COMPLETED")
+    print(f"Results saved to: {RESULTS_DIR}/")
+    print("Run analyze_results.py to compare scenarios.")
+    print("=" * 70)
+
 
 if __name__ == "__main__":
     main()

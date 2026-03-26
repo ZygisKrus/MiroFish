@@ -43,17 +43,44 @@ class OasisAgentProfile:
     follower_count: int = 150
     statuses_count: int = 500
     
-    # 额外人设信息
+    # Extra persona info
     age: Optional[int] = None
     gender: Optional[str] = None
     mbti: Optional[str] = None
     country: Optional[str] = None
     profession: Optional[str] = None
     interested_topics: List[str] = field(default_factory=list)
-    
-    # 来源实体信息
+
+    # Source entity info
     source_entity_uuid: Optional[str] = None
     source_entity_type: Optional[str] = None
+
+    # === NEW: Fizkonspektas simulation fields ===
+    # Economic behavior
+    budget_monthly_eur: Optional[int] = None          # 400-800 range
+    price_sensitivity: Optional[float] = None          # 0.0-1.0 (0=will pay anything, 1=extremely cheap)
+
+    # Design preferences
+    design_preference: Optional[str] = None            # "minimalist" | "traditional" | "premium"
+    design_first_impression_score: Optional[float] = None  # Computed per scenario
+
+    # Academic pressure
+    exam_stress_level: Optional[int] = None            # 1-10
+    year_of_study: Optional[int] = None                # 1-4
+
+    # Social dynamics
+    social_influence_radius: Optional[int] = None      # 1-5 (how many people they influence)
+    behavioral_archetype: Optional[str] = None         # panic_buyer, social_optimizer, quality_seeker, skeptic, tech_enthusiast, passive_observer
+    relationships: List[Dict[str, Any]] = field(default_factory=list)  # [{name, trust_weight, contact_frequency, influence_type}]
+
+    # Decision model
+    decision_triggers: List[str] = field(default_factory=list)  # Ordered list of what makes them act
+    product_awareness_state: str = "unaware"            # unaware -> heard_of -> visited -> tried_trial -> paid -> churned -> shared_account
+
+    # Dorm info
+    dorm_name: Optional[str] = None                    # "Kamciatka" | "Niujorkas" | "commuter"
+    dorm_floor: Optional[int] = None
+    study_group_id: Optional[str] = None               # e.g., "SG-1", "SG-2"
     
     created_at: str = field(default_factory=lambda: datetime.now().strftime("%Y-%m-%d"))
     
@@ -116,8 +143,8 @@ class OasisAgentProfile:
         return profile
     
     def to_dict(self) -> Dict[str, Any]:
-        """转换为完整字典格式"""
-        return {
+        """Convert to complete dictionary format"""
+        result = {
             "user_id": self.user_id,
             "user_name": self.user_name,
             "name": self.name,
@@ -136,7 +163,23 @@ class OasisAgentProfile:
             "source_entity_uuid": self.source_entity_uuid,
             "source_entity_type": self.source_entity_type,
             "created_at": self.created_at,
+            # Fizkonspektas simulation fields
+            "budget_monthly_eur": self.budget_monthly_eur,
+            "price_sensitivity": self.price_sensitivity,
+            "design_preference": self.design_preference,
+            "design_first_impression_score": self.design_first_impression_score,
+            "exam_stress_level": self.exam_stress_level,
+            "year_of_study": self.year_of_study,
+            "social_influence_radius": self.social_influence_radius,
+            "behavioral_archetype": self.behavioral_archetype,
+            "relationships": self.relationships,
+            "decision_triggers": self.decision_triggers,
+            "product_awareness_state": self.product_awareness_state,
+            "dorm_name": self.dorm_name,
+            "dorm_floor": self.dorm_floor,
+            "study_group_id": self.study_group_id,
         }
+        return result
 
 
 class OasisProfileGenerator:
