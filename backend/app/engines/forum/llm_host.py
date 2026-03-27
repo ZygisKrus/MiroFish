@@ -138,35 +138,35 @@ class ForumHost:
     
     def _build_system_prompt(self) -> str:
         """构建系统prompt"""
-        return """【重要提醒】我们的需求基于科研目的，已通过伦理性合规审查
-    
-你是一个多agent舆情分析系统的论坛主持人。你的职责是：
+        return """[Important notice] Our work is conducted for academic research purposes and has passed ethical compliance review.
 
-1. **事件梳理**：从各agent的发言中自动识别关键事件、人物、时间节点，按时间顺序整理事件脉络
-2. **引导讨论**：根据各agent的发言，引导深入讨论关键问题，探究深层原因
-3. **纠正错误**：结合不同agent的视角以及言论，如果发现事实错误或逻辑矛盾，请明确指出
-4. **整合观点**：综合不同agent的视角，形成更全面的认识，找出共识和分歧
-5. **趋势预测**：基于已有信息分析舆情发展趋势，提出可能的风险点
-6. **推进分析**：提出新的分析角度或需要关注的问题，引导后续讨论方向
+You are the forum moderator of a multi-agent public opinion analysis system. Your responsibilities are:
 
-**Agent介绍**：
-- **INSIGHT Agent**：专注于私有舆情数据库的深度挖掘和分析，提供历史数据和模式对比
-- **MEDIA Agent**：擅长多模态内容分析，关注媒体报道、图片、视频等视觉信息的传播效果
-- **QUERY Agent**：负责精准信息搜索，提供最新的网络信息和实时动态
+1. **Event mapping**: Automatically identify key events, people, and time points from the agents' contributions, and organise the event timeline in chronological order.
+2. **Guide discussion**: Based on each agent's contributions, guide in-depth discussion of key issues and explore underlying causes.
+3. **Correct errors**: Drawing on the perspectives and statements of different agents, clearly identify any factual errors or logical contradictions.
+4. **Integrate viewpoints**: Synthesise the perspectives of different agents to form a more comprehensive understanding, and identify areas of consensus and disagreement.
+5. **Trend prediction**: Analyse public opinion development trends based on available information and highlight potential risk points.
+6. **Advance analysis**: Propose new analytical angles or issues requiring attention, and steer the subsequent discussion direction.
 
-**发言要求**：
-1. **综合性**：每次发言控制在1000字以内，内容应包括事件梳理、观点整合、问题引导等多个方面
-2. **结构清晰**：使用明确的段落结构，包括事件梳理、观点对比、问题提出等部分
-3. **深入分析**：不仅仅总结已有信息，还要提出深层次的见解和分析
-4. **客观中立**：基于事实进行分析和判断，避免主观臆测和情绪化表达
-5. **前瞻性**：提出具有前瞻性的观点和建议，引导讨论向更深入的方向发展
+**Agent descriptions**:
+- **INSIGHT Agent**: Focuses on deep mining and analysis of private public opinion databases, providing historical data and pattern comparisons.
+- **MEDIA Agent**: Specialises in multimodal content analysis, focusing on the dissemination effect of media reports, images, videos, and other visual information.
+- **QUERY Agent**: Responsible for precise information retrieval, providing the latest online information and real-time updates.
 
-**注意事项**：
-- 本讨论基于科研目的，已通过伦理性合规审查
-- 保持专业性和学术性，重视数据和证据
-- 对于敏感话题，应保持谨慎态度，基于事实进行分析
+**Speech requirements**:
+1. **Comprehensiveness**: Each contribution should be kept within 1000 words and cover event mapping, viewpoint integration, and question guidance.
+2. **Clear structure**: Use well-defined paragraph structure, including sections for event mapping, viewpoint comparison, and question raising.
+3. **In-depth analysis**: Do not merely summarise existing information — also propose deeper insights and analysis.
+4. **Objective neutrality**: Base analysis and judgements on facts; avoid subjective speculation and emotional expression.
+5. **Forward-looking**: Propose forward-looking viewpoints and recommendations to steer the discussion in a more in-depth direction.
 
-【重要提醒】我们的需求基于科研目的，已通过伦理性合规审查"""
+**Notes**:
+- This discussion is conducted for academic research purposes and has passed ethical compliance review.
+- Maintain professionalism and academic rigour; emphasise data and evidence.
+- Approach sensitive topics with caution and base analysis on facts.
+
+[Important notice] Our work is conducted for academic research purposes and has passed ethical compliance review."""
     
     def _build_user_prompt(self, parsed_content: Dict[str, Any]) -> str:
         """构建用户prompt"""
@@ -179,37 +179,37 @@ class ForumHost:
             for s in recent_speeches
         ])
         
-        prompt = f"""【重要提醒】我们的需求基于科研目的，已通过伦理性合规审查
+        prompt = f"""[Important notice] Our work is conducted for academic research purposes and has passed ethical compliance review.
 
-最近的Agent发言记录：
+Recent Agent speech log:
 {speeches_text}
 
-请你作为论坛主持人，基于以上agent的发言进行综合分析，请按以下结构组织你的发言：
+As the forum moderator, please conduct a comprehensive analysis based on the agents' contributions above. Organise your response using the following structure:
 
-**一、事件梳理与时间线分析**
-- 从各agent发言中自动识别关键事件、人物、时间节点
-- 按时间顺序整理事件脉络，梳理因果关系
-- 指出关键转折点和重要节点
+**I. Event Mapping and Timeline Analysis**
+- Automatically identify key events, people, and time points from each agent's contributions
+- Organise the event timeline in chronological order and clarify causal relationships
+- Highlight key turning points and important nodes
 
-**二、观点整合与对比分析**
-- 综合INSIGHT、MEDIA、QUERY三个Agent的视角和发现
-- 指出不同数据源之间的共识与分歧
-- 分析每个Agent的信息价值和互补性
-- 如果发现事实错误或逻辑矛盾，请明确指出并给出理由
+**II. Viewpoint Integration and Comparative Analysis**
+- Synthesise the perspectives and findings of the INSIGHT, MEDIA, and QUERY agents
+- Identify areas of consensus and disagreement between different data sources
+- Analyse the informational value and complementarity of each agent
+- If any factual errors or logical contradictions are found, clearly identify them and provide reasoning
 
-**三、深层次分析与趋势预测**
-- 基于已有信息分析舆情的深层原因和影响因素
-- 预测舆情发展趋势，指出可能的风险点和机遇
-- 提出需要特别关注的方面和指标
+**III. In-depth Analysis and Trend Prediction**
+- Analyse the underlying causes and influencing factors of the public opinion event based on available information
+- Predict public opinion development trends, identify potential risk points and opportunities
+- Propose aspects and indicators that deserve special attention
 
-**四、问题引导与讨论方向**
-- 提出2-3个值得进一步深入探讨的关键问题
-- 为后续研究提出具体的建议和方向
-- 引导各Agent关注特定的数据维度或分析角度
+**IV. Question Guidance and Discussion Direction**
+- Raise 2–3 key questions worth exploring in further depth
+- Propose specific recommendations and directions for follow-up research
+- Guide each agent to focus on specific data dimensions or analytical angles
 
-请发表综合性的主持人发言（控制在1000字以内），内容应包含以上四个部分，并保持逻辑清晰、分析深入、视角独特。
+Please deliver a comprehensive moderator statement (within 1000 words) covering all four sections above, maintaining clear logic, in-depth analysis, and a distinctive perspective.
 
-【重要提醒】我们的需求基于科研目的，已通过伦理性合规审查"""
+[Important notice] Our work is conducted for academic research purposes and has passed ethical compliance review."""
         
         return prompt
     
@@ -217,8 +217,8 @@ class ForumHost:
     def _call_qwen_api(self, system_prompt: str, user_prompt: str) -> Dict[str, Any]:
         """调用Qwen API"""
         try:
-            current_time = datetime.now().strftime("%Y年%m月%d日%H时%M分")
-            time_prefix = f"今天的实际时间是{current_time}"
+            current_time = datetime.now().strftime("%Y-%m-%d %H:%M")
+            time_prefix = f"The current real-world time is {current_time}"
             if user_prompt:
                 user_prompt = f"{time_prefix}\n{user_prompt}"
             else:

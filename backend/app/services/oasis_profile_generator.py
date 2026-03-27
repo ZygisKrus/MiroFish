@@ -381,7 +381,7 @@ class OasisProfileGenerator:
             logger.debug(f"跳过Zep检索：未设置graph_id")
             return results
         
-        comprehensive_query = f"关于{entity_name}的所有信息、活动、事件、关系和背景"
+        comprehensive_query = f"All information, activities, events, relationships and background about {entity_name}"
         
         def search_edges():
             """搜索边（事实/关系）- 带重试机制"""
@@ -1291,7 +1291,7 @@ IMPORTANT:
                 "age": profile.age if profile.age else 30,
                 "gender": self._normalize_gender(profile.gender),
                 "mbti": profile.mbti if profile.mbti else "ISTJ",
-                "country": profile.country if profile.country else "中国",
+                "country": profile.country if profile.country else "Lithuania",
             }
             
             # 可选字段
