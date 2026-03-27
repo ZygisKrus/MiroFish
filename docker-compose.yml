@@ -1,5 +1,7 @@
 services:
+  # ─── Main Application ────────────────────────────────────────────────────────
   mirofish:
+    # Flask API (:5001) + Vue frontend (:3000) served via `serve`
     platform: linux/amd64
     build: .
     image: mirofish:local

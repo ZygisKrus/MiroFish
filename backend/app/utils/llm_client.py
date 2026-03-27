@@ -157,8 +157,7 @@ class LLMClient:
             except RateLimitError as e:
                 last_error = e
                 # Parse suggested retry delay from error message if available (e.g. Google: "retry in 11.5s")
-                import re as _re
-                _delay_match = _re.search(r'retry in (\d+\.?\d*)s', str(e), _re.IGNORECASE)
+                _delay_match = re.search(r'retry in (\d+\.?\d*)s', str(e), re.IGNORECASE)
                 _wait = float(_delay_match.group(1)) + 3 if _delay_match else 30
                 print(f"[LLM Client] Rate limit (429) on attempt {attempt + 1}, waiting {_wait:.0f}s for reset...")
                 time.sleep(_wait)

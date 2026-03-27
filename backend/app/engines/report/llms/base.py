@@ -5,20 +5,13 @@ Report Engine 默认的OpenAI兼容LLM客户端封装。
 """
 
 import os
-import sys
 from typing import Any, Dict, Optional, Generator
 from loguru import logger
 
 from openai import OpenAI
 
-current_dir = os.path.dirname(os.path.abspath(__file__))
-project_root = os.path.dirname(os.path.dirname(current_dir))
-utils_dir = os.path.join(project_root, "utils")
-if utils_dir not in sys.path:
-    sys.path.append(utils_dir)
-
 try:
-    from retry_helper import with_retry, LLM_RETRY_CONFIG
+    from ....utils.retry_helper import with_retry, LLM_RETRY_CONFIG
 except ImportError:
     def with_retry(config=None):
         """简化版with_retry占位，实现与真实装饰器一致的调用签名"""

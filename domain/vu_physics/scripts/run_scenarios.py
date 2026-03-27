@@ -25,6 +25,14 @@ try:
 except ImportError:
     _CALENDAR_AVAILABLE = False
 
+# Polling constants
+POLL_INTERVAL_FAST = 5       # seconds between graph build polls
+POLL_INTERVAL_PREPARE = 10   # seconds between prepare polls
+POLL_INTERVAL_SIM = 15       # seconds between simulation polls
+GRAPH_BUILD_TIMEOUT = 60     # max polls for graph build (~5 min)
+PREPARE_TIMEOUT = 150        # max polls for preparation (~25 min)
+SIM_TIMEOUT = 960            # max polls for full simulation (~4 hours)
+
 BASE_URL = "http://127.0.0.1:5001/api"
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 SEED_FILE = os.path.abspath(os.path.join(SCRIPT_DIR, "../seeds/refined_mega_seed.md"))
@@ -195,7 +203,7 @@ def run_scenario(scenario, rounds, academic_start="mid"):
     response = requests.post(f"{BASE_URL}/graph/build", json={"project_id": project_id})
     if response.status_code == 200:
         task_id = response.json()['data']['task_id']
-        for _ in range(60):
+        for _ in range(GRAPH_BUILD_TIMEOUT):
             r = requests.get(f"{BASE_URL}/graph/task/{task_id}")
             task = r.json()
             status = task.get('status', 'unknown')
@@ -208,7 +216,7 @@ def run_scenario(scenario, rounds, academic_start="mid"):
             elif status == 'failed':
                 print(f"WARN: Graph build failed, using local seed fallback")
                 break
-            time.sleep(5)
+            time.sleep(POLL_INTERVAL_FAST)
 
     # Step 3: Create Simulation (with new platform flags)
     print("\n[Step 3] Creating Simulation...")
@@ -236,7 +244,7 @@ def run_scenario(scenario, rounds, academic_start="mid"):
         print(f"FAILED Step 4: {response.text}")
         return None
 
-    for _ in range(150):
+    for _ in range(PREPARE_TIMEOUT):
         response = requests.post(f"{BASE_URL}/simulation/prepare/status", json=data)
         if response.status_code != 200:
             return None
@@ -248,7 +256,7 @@ def run_scenario(scenario, rounds, academic_start="mid"):
         elif status == 'failed':
             print(f"FAILED: {status_data.get('error')}")
             return None
-        time.sleep(10)
+        time.sleep(POLL_INTERVAL_PREPARE)
     else:
         print("TIMED OUT")
         return None
@@ -268,7 +276,7 @@ def run_scenario(scenario, rounds, academic_start="mid"):
 
     # Step 6: Poll until complete
     print("\n[Step 6] Running simulation...")
-    for _ in range(960):  # Up to 4 hours for long simulations
+    for _ in range(SIM_TIMEOUT):  # Up to 4 hours for long simulations
         response = requests.get(f"{BASE_URL}/simulation/{simulation_id}/run-status")
         status_data = response.json().get('data', {})
         total_rnd = status_data.get('total_rounds', rounds)
@@ -277,7 +285,7 @@ def run_scenario(scenario, rounds, academic_start="mid"):
         print(f"  Round {current}/{total_rnd} (Day {day}) - {status_data.get('runner_status')}")
         if status_data.get('runner_status') in ['completed', 'failed']:
             break
-        time.sleep(15)
+        time.sleep(POLL_INTERVAL_SIM)
 
     # Save scenario metadata
     os.makedirs(RESULTS_DIR, exist_ok=True)
