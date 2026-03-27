@@ -9,62 +9,67 @@ services:
     tty: true
     stdin_open: true
     env_file:
-      - .env
+      - .env  # Loads LLM_API_KEY, OUTPUT_LANGUAGE, and other config
     ports:
-      - "3001:3000"
-      - "5001:5001"
+      - "3001:3000"  # Frontend port
+      - "5001:5001"  # Backend API port
     restart: on-failure
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]  # Verifies backend is responsive
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 120s
     volumes:
-      - ./backend/uploads:/app/backend/uploads
-      - ./backend/logs:/app/backend/logs
+      - ./backend/uploads:/app/backend/uploads  # Persists uploaded seed documents
+      - ./backend/logs:/app/backend/logs  # Persists application logs
     deploy:
       resources:
         limits:
-          memory: 8G
+          memory: 8G  # LLM inference requires substantial memory
     depends_on:
       zep:
-        condition: service_started
+        condition: service_started  # Waits for Zep to be available before starting
     networks:
       - common_net
 
+  # ─── Memory Graph ─────────────────────────────────────────────────────────────
   zep:
+    # Zep Community Edition — graph-based agent memory and entity storage
+    # Stores entity relationships extracted from seed documents
     image: ghcr.io/getzep/zep:latest
     container_name: zep-server
     ports:
-      - "8000:8000"
+      - "8000:8000"  # Zep API port
     volumes:
-      - ./config-zep.yaml:/app/config.yaml
+      - ./config-zep.yaml:/app/config.yaml  # Zep configuration (DB connection, memory settings)
     environment:
-      - ZEP_OPENAI_API_KEY=local_dummy_not_used
+      - ZEP_OPENAI_API_KEY=local_dummy_not_used  # Not needed for CE
     command: ["--config", "/app/config.yaml"]
     depends_on:
       db:
-        condition: service_healthy
+        condition: service_healthy  # Waits for PostgreSQL to be ready before starting
     networks:
       - common_net
 
+  # ─── Database ─────────────────────────────────────────────────────────────────
   db:
+    # PostgreSQL 15 + pgvector — backing store for Zep's entity graph and embeddings
     image: pgvector/pgvector:pg15
     container_name: zep-db
     ports:
-      - "5432:5432"
+      - "5432:5432"  # PostgreSQL port
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=zep
+      - POSTGRES_DB=zep  # Zep-specific database
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]  # Verifies DB is accepting connections
       interval: 5s
       timeout: 5s
       retries: 5
     volumes:
-      - zep_db_data:/var/lib/postgresql/data
+      - zep_db_data:/var/lib/postgresql/data  # Persists all entity and edge data across restarts
     networks:
       - common_net
 
