@@ -62,8 +62,8 @@ class LLMClient:
 
     @with_retry(LLM_RETRY_CONFIG)
     def invoke(self, system_prompt: str, user_prompt: str, **kwargs) -> str:
-        current_time = datetime.now().strftime("%Y年%m月%d日%H时%M分")
-        time_prefix = f"今天的实际时间是{current_time}"
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M")
+        time_prefix = f"Current time: {current_time}"
         if user_prompt:
             user_prompt = f"{time_prefix}\n{user_prompt}"
         else:
@@ -94,17 +94,17 @@ class LLMClient:
     def stream_invoke(self, system_prompt: str, user_prompt: str, **kwargs) -> Generator[str, None, None]:
         """
         流式调用LLM，逐步返回响应内容
-        
+
         Args:
             system_prompt: 系统提示词
             user_prompt: 用户提示词
             **kwargs: 额外参数（temperature, top_p等）
-            
+
         Yields:
             响应文本块（str）
         """
-        current_time = datetime.now().strftime("%Y年%m月%d日%H时%M分")
-        time_prefix = f"今天的实际时间是{current_time}"
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M")
+        time_prefix = f"Current time: {current_time}"
         if user_prompt:
             user_prompt = f"{time_prefix}\n{user_prompt}"
         else:
