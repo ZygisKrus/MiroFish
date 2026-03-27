@@ -21,6 +21,7 @@ from openai import OpenAI
 
 from ..config import Config
 from ..utils.logger import get_logger
+from ..utils.language_utils import inject_language_header
 from .zep_entity_reader import EntityNode, ZepEntityReader
 
 logger = get_logger('mirofish.simulation_config')
@@ -518,12 +519,15 @@ class SimulationConfigGenerator:
         
         for attempt in range(max_attempts):
             try:
+                messages = [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": prompt}
+                ]
+                messages = inject_language_header(messages)
+
                 response = self.client.chat.completions.create(
                     model=self.model_name,
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": prompt}
-                    ],
+                    messages=messages,
                     response_format={"type": "json_object"},
                     temperature=0.7 - (attempt * 0.1),  # 每次重试降低温度
                     timeout=60.0
@@ -619,26 +623,26 @@ class SimulationConfigGenerator:
         # 计算最大允许值（80%的agent数）
         max_agents_allowed = max(1, int(num_entities * 0.9))
         
-        prompt = f"""基于以下模拟需求，生成时间模拟配置。
+        prompt = f"""Based on the following simulation requirements, generate a time simulation configuration.
 
 {context_truncated}
 
-## 任务
-请生成时间配置JSON。
+## Task
+Generate a time configuration JSON.
 
-### 基本原则（仅供参考，需根据具体事件和参与群体灵活调整）：
-- 用户群体为立陶宛大学生（特别是物理系学生），需符合东欧时间（EET）作息习惯
-- 凌晨2-6点几乎无人活动（活跃度系数0.05），因为学生在睡觉
-- 早上7-9点逐渐活跃（活跃度系数0.4）
-- 白天10-16点因为在上课（如VU Saulėtekis），属于中等活跃（活跃度系数0.7）
-- 晚间18-23点是高峰期，学生在宿舍学习或休息（活跃度系数1.5）
-- 23点-凌晨2点属于夜猫子时段，可能有关于考试的焦虑讨论（活跃度系数0.8）
-- **重要**：你需要根据事件性质、参与群体特点来调整具体时段
-  - 例如：考试前夕，深夜活跃度会大幅上升
+### General Principles (for reference — adjust flexibly based on the specific event and participant group):
+- The user group is Lithuanian university students (particularly physics students), so the schedule should follow Eastern European Time (EET) daily patterns
+- 2–6 AM: almost no activity (activity multiplier 0.05) — students are asleep
+- 7–9 AM: gradually becoming active (activity multiplier 0.4)
+- 10 AM–4 PM: moderate activity — students are in lectures (e.g. at VU Sauletekis) (activity multiplier 0.7)
+- 6–11 PM: peak period — students studying or relaxing in dormitories (activity multiplier 1.5)
+- 11 PM–2 AM: late-night period — possibly anxious exam discussions (activity multiplier 0.8)
+- **Important**: Adjust specific time slots based on the nature of the event and participant group characteristics
+  - For example: on the eve of exams, late-night activity will increase significantly
 
-### 返回JSON格式（不要markdown）
+### Return JSON format (no markdown)
 
-示例：
+Example:
 {{
     "total_simulation_hours": 72,
     "minutes_per_round": 60,
@@ -648,21 +652,21 @@ class SimulationConfigGenerator:
     "off_peak_hours": [2, 3, 4, 5, 6],
     "morning_hours": [7, 8, 9],
     "work_hours": [10, 11, 12, 13, 14, 15, 16, 17],
-    "reasoning": "针对该事件的时间配置说明"
+    "reasoning": "Brief explanation of the time configuration for this event"
 }}
 
-字段说明：
-- total_simulation_hours (int): 模拟总时长，24-168小时，突发事件短、持续话题长
-- minutes_per_round (int): 每轮时长，30-120分钟，建议60分钟
-- agents_per_hour_min (int): 每小时最少激活Agent数（取值范围: 1-{max_agents_allowed}）
-- agents_per_hour_max (int): 每小时最多激活Agent数（取值范围: 1-{max_agents_allowed}）
-- peak_hours (int数组): 高峰时段，根据事件参与群体调整
-- off_peak_hours (int数组): 低谷时段，通常深夜凌晨
-- morning_hours (int数组): 早间时段
-- work_hours (int数组): 工作时段
-- reasoning (string): 简要说明为什么这样配置"""
+Field descriptions:
+- total_simulation_hours (int): Total simulation duration in hours, 24–168; shorter for sudden events, longer for ongoing topics
+- minutes_per_round (int): Duration per round in minutes, 30–120; 60 minutes recommended
+- agents_per_hour_min (int): Minimum number of agents activated per hour (range: 1–{max_agents_allowed})
+- agents_per_hour_max (int): Maximum number of agents activated per hour (range: 1–{max_agents_allowed})
+- peak_hours (int array): Peak activity hours — adjust based on participant group
+- off_peak_hours (int array): Low-activity hours — usually late night / early morning
+- morning_hours (int array): Morning hours
+- work_hours (int array): Working / lecture hours
+- reasoning (string): Brief explanation of why this configuration was chosen"""
 
-        system_prompt = "你是社交媒体模拟专家。返回纯JSON格式，时间配置需符合立陶宛大学生的作息习惯。"
+        system_prompt = "You are a social media simulation expert. Return pure JSON format. The time configuration must reflect the daily schedule of Lithuanian university students."
         
         try:
             return self._call_llm_with_retry(prompt, system_prompt)
@@ -754,46 +758,46 @@ class SimulationConfigGenerator:
         # 使用配置的上下文截断长度
         context_truncated = context[:self.EVENT_CONFIG_CONTEXT_LENGTH]
         
-        prompt = f"""基于以下模拟需求，生成事件配置。
+        prompt = f"""Based on the following simulation requirements, generate an event configuration.
 
-模拟需求: {simulation_requirement}
+Simulation requirements: {simulation_requirement}
 
 {context_truncated}
 
-## 可用实体类型及示例
+## Available Entity Types and Examples
 {type_info}
 
-## 任务
-请生成事件配置JSON：
-- 提取热点话题关键词
-- 描述舆论发展方向
-- 设计初始帖子内容，**每个帖子必须指定 poster_type（发布者类型）**
+## Task
+Generate an event configuration JSON:
+- Extract trending topic keywords
+- Describe the direction of opinion development
+- Design initial post content — **each post must specify a poster_type (the type of the posting entity)**
 
-**重要**: poster_type 必须从上面的"可用实体类型"中选择，这样初始帖子才能分配给合适的 Agent 发布。
-例如：官方声明应由 Official/University 类型发布，新闻由 MediaOutlet 发布，学生观点由 Student 发布。
+**Important**: poster_type must be chosen from the "Available Entity Types" listed above, so that initial posts can be assigned to the appropriate Agent for posting.
+For example: official statements should be posted by the Official/University type, news by MediaOutlet, and student opinions by Student.
 
-返回JSON格式（不要markdown）：
+Return JSON format (no markdown):
 {{
-    "hot_topics": ["关键词1", "关键词2", ...],
-    "narrative_direction": "<舆论发展方向描述>",
+    "hot_topics": ["keyword1", "keyword2", ...],
+    "narrative_direction": "<description of the direction of opinion development>",
     "initial_posts": [
-        {{"content": "帖子内容", "poster_type": "实体类型（必须从可用类型中选择）"}},
+        {{"content": "Post content", "poster_type": "Entity type (must be chosen from available types)"}},
         ...
     ],
-    "reasoning": "<简要说明>"
+    "reasoning": "<brief explanation>"
 }}"""
 
-        system_prompt = "你是舆论分析专家。返回纯JSON格式。注意 poster_type 必须精确匹配可用实体类型。"
-        
+        system_prompt = "You are a public opinion analysis expert. Return pure JSON format. The poster_type must exactly match one of the available entity types."
+
         try:
             return self._call_llm_with_retry(prompt, system_prompt)
         except Exception as e:
-            logger.warning(f"事件配置LLM生成失败: {e}, 使用默认配置")
+            logger.warning(f"Event config LLM generation failed: {e}, using default config")
             return {
                 "hot_topics": [],
                 "narrative_direction": "",
                 "initial_posts": [],
-                "reasoning": "使用默认配置"
+                "reasoning": "Using default configuration"
             }
     
     def _parse_event_config(self, result: Dict[str, Any]) -> EventConfig:

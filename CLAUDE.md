@@ -61,7 +61,7 @@ Copy `.env.example` to `.env` and fill in:
 | `ZEP_API_URL` | No | Zep CE URL (default: http://localhost:8000) |
 | `ZEP_API_KEY` | No | Zep Cloud API key (leave empty for CE) |
 
-**Recommended model for Lithuanian:** `meta-llama/llama-3.3-70b-instruct:free`
+**Recommended model for Lithuanian:** `openai/gpt-oss-120b:free`
 
 ## Running Simulations
 

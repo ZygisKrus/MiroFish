@@ -21,6 +21,12 @@ utils_dir = os.path.join(root_dir, 'utils')
 if utils_dir not in sys.path:
     sys.path.append(utils_dir)
 
+# Add app utils to path for language_utils import
+app_dir = os.path.join(os.path.dirname(root_dir), '..', '..')
+if app_dir not in sys.path:
+    sys.path.insert(0, app_dir)
+from app.utils.language_utils import inject_language_header
+
 from utils.retry_helper import with_graceful_retry, SEARCH_API_RETRY_CONFIG
 
 
@@ -217,13 +223,17 @@ class ForumHost:
                 user_prompt = f"{time_prefix}\n{user_prompt}"
             else:
                 user_prompt = time_prefix
-                
+
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ]
+
+            messages = inject_language_header(messages)
+
             response = self.client.chat.completions.create(
                 model=self.model,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt}
-                ],
+                messages=messages,
                 temperature=0.6,
                 top_p=0.9,
             )

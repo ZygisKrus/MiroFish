@@ -5,10 +5,18 @@ Report Engine 默认的OpenAI兼容LLM客户端封装。
 """
 
 import os
+import sys
 from typing import Any, Dict, Optional, Generator
 from loguru import logger
 
 from openai import OpenAI
+
+# Add app utils to path for language_utils import
+current_dir = os.path.dirname(os.path.abspath(__file__))
+app_dir = os.path.join(os.path.dirname(current_dir), '..', '..', '..')
+if app_dir not in sys.path:
+    sys.path.insert(0, app_dir)
+from app.utils.language_utils import inject_language_header
 
 try:
     from ....utils.retry_helper import with_retry, LLM_RETRY_CONFIG
@@ -81,6 +89,8 @@ class LLMClient:
 
         timeout = kwargs.pop("timeout", self.timeout)
 
+        messages = inject_language_header(messages)
+
         response = self.client.chat.completions.create(
             model=self.model_name,
             messages=messages,
@@ -115,6 +125,8 @@ class LLMClient:
         extra_params["stream"] = True
 
         timeout = kwargs.pop("timeout", self.timeout)
+
+        messages = inject_language_header(messages)
 
         try:
             stream = self.client.chat.completions.create(

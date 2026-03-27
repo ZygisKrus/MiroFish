@@ -11,6 +11,7 @@ from openai import OpenAI, RateLimitError
 from tenacity import retry, wait_exponential, stop_after_attempt, retry_if_exception_type, retry_if_not_exception_type
 
 from ..config import Config
+from .language_utils import inject_language_header
 
 
 class LLMClient:
@@ -53,21 +54,7 @@ class LLMClient:
         short English override header so the model responds in the correct
         language for non-Chinese simulation contexts.
         """
-        lang = Config.OUTPUT_LANGUAGE or "English"
-        if lang.strip().lower() == "chinese":
-            return messages  # Original Chinese behaviour — no injection needed
-        header = (
-            f"IMPORTANT: You must respond entirely in {lang}. "
-            f"All text, field values, summaries, and analysis must be written in {lang}. "
-            f"Do not use Chinese or any other language.\n\n"
-        )
-        result = []
-        for msg in messages:
-            if msg.get("role") == "system":
-                result.append({**msg, "content": header + msg["content"]})
-            else:
-                result.append(msg)
-        return result
+        return inject_language_header(messages, Config.OUTPUT_LANGUAGE)
 
     def chat(
         self,

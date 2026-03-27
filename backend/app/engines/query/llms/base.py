@@ -16,6 +16,12 @@ utils_dir = os.path.join(project_root, "utils")
 if utils_dir not in sys.path:
     sys.path.append(utils_dir)
 
+# Add app utils to path for language_utils import
+app_dir = os.path.join(os.path.dirname(current_dir), '..', '..', '..')
+if app_dir not in sys.path:
+    sys.path.insert(0, app_dir)
+from app.utils.language_utils import inject_language_header
+
 try:
     from retry_helper import with_retry, LLM_RETRY_CONFIG
 except ImportError:
@@ -72,6 +78,8 @@ class LLMClient:
 
         timeout = kwargs.pop("timeout", self.timeout)
 
+        messages = inject_language_header(messages)
+
         response = self.client.chat.completions.create(
             model=self.model_name,
             messages=messages,
@@ -112,6 +120,8 @@ class LLMClient:
         extra_params["stream"] = True
 
         timeout = kwargs.pop("timeout", self.timeout)
+
+        messages = inject_language_header(messages)
 
         try:
             stream = self.client.chat.completions.create(
