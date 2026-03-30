@@ -277,14 +277,23 @@ def run_scenario(scenario, rounds, academic_start="mid"):
     # Step 6: Poll until complete
     print("\n[Step 6] Running simulation...")
     for _ in range(SIM_TIMEOUT):  # Up to 4 hours for long simulations
-        response = requests.get(f"{BASE_URL}/simulation/{simulation_id}/run-status")
-        status_data = response.json().get('data', {})
-        total_rnd = status_data.get('total_rounds', rounds)
-        current = status_data.get('current_round', 0)
-        day = (current // 4) + 1 if current > 0 else 0
-        print(f"  Round {current}/{total_rnd} (Day {day}) - {status_data.get('runner_status')}")
-        if status_data.get('runner_status') in ['completed', 'failed']:
-            break
+        try:
+            response = requests.get(f"{BASE_URL}/simulation/{simulation_id}/run-status")
+            status_data = response.json().get('data', {})
+            total_rnd = status_data.get('total_rounds', rounds)
+            current = status_data.get('current_round', 0)
+            day = (current // 4) + 1 if current > 0 else 0
+            print(f"  Round {current}/{total_rnd} (Day {day}) - {status_data.get('runner_status')}")
+            if status_data.get('runner_status') in ['completed', 'failed']:
+                break
+        except requests.exceptions.ConnectionError as e:
+            print(f"  WARN: Connection error polling run-status ({e}), retrying in 5s...")
+            time.sleep(5)
+            continue
+        except requests.exceptions.RequestException as e:
+            print(f"  WARN: Request error polling run-status ({e}), retrying in 5s...")
+            time.sleep(5)
+            continue
         time.sleep(POLL_INTERVAL_SIM)
 
     # Save scenario metadata

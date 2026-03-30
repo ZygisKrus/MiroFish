@@ -76,6 +76,8 @@ import warnings
 from datetime import datetime
 from typing import Dict, Any, List, Optional, Tuple
 
+import pandas as pd
+
 
 # 全局变量：用于信号处理
 _shutdown_event = None
@@ -1134,7 +1136,20 @@ async def run_twitter_simulation(
     if not os.path.exists(profile_path):
         log_info(f"错误: Profile文件不存在: {profile_path}")
         return result
-    
+
+    # Inject output language instruction into agent profiles before OASIS loads them
+    lang = os.environ.get("OUTPUT_LANGUAGE", "English")
+    if lang.lower() != "chinese":
+        lang_prefix = (
+            f"IMPORTANT: You must respond entirely in {lang}. "
+            f"All your posts, comments, and replies must be written in {lang}. "
+            f"Do not use Chinese or any other language.\n\n"
+        )
+        _tw_df = pd.read_csv(profile_path)
+        if "user_char" in _tw_df.columns:
+            _tw_df["user_char"] = lang_prefix + _tw_df["user_char"].astype(str)
+            _tw_df.to_csv(profile_path, index=False)
+
     result.agent_graph = await generate_twitter_agent_graph(
         profile_path=profile_path,
         model=model,
@@ -1330,7 +1345,23 @@ async def run_reddit_simulation(
     if not os.path.exists(profile_path):
         log_info(f"错误: Profile文件不存在: {profile_path}")
         return result
-    
+
+    # Inject output language instruction into agent profiles before OASIS loads them
+    lang = os.environ.get("OUTPUT_LANGUAGE", "English")
+    if lang.lower() != "chinese":
+        lang_prefix = (
+            f"IMPORTANT: You must respond entirely in {lang}. "
+            f"All your posts, comments, and replies must be written in {lang}. "
+            f"Do not use Chinese or any other language.\n\n"
+        )
+        with open(profile_path, "r", encoding="utf-8") as _f:
+            _reddit_profiles = json.load(_f)
+        for _agent in _reddit_profiles:
+            if "persona" in _agent:
+                _agent["persona"] = lang_prefix + str(_agent["persona"])
+        with open(profile_path, "w", encoding="utf-8") as _f:
+            json.dump(_reddit_profiles, _f, ensure_ascii=False, indent=2)
+
     result.agent_graph = await generate_reddit_agent_graph(
         profile_path=profile_path,
         model=model,
