@@ -1237,7 +1237,8 @@ async def run_twitter_simulation(
             break
         
         simulated_minutes = round_num * minutes_per_round
-        simulated_hour = (simulated_minutes // 60) % 24
+        start_hour = time_config.get("simulation_start_hour", 18)  # default evening peak
+        simulated_hour = (start_hour + simulated_minutes // 60) % 24
         simulated_day = simulated_minutes // (60 * 24) + 1
         
         active_agents = get_active_agents_for_round(
@@ -1440,7 +1441,8 @@ async def run_reddit_simulation(
             break
         
         simulated_minutes = round_num * minutes_per_round
-        simulated_hour = (simulated_minutes // 60) % 24
+        start_hour = time_config.get("simulation_start_hour", 18)  # default evening peak
+        simulated_hour = (start_hour + simulated_minutes // 60) % 24
         simulated_day = simulated_minutes // (60 * 24) + 1
         
         active_agents = get_active_agents_for_round(
